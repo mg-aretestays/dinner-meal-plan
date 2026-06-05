@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2f6f4f">
+<title>Rotating Dinner Meal Plan</title>
+<style>
+  :root{
+    --bg:#f6f5f1; --card:#ffffff; --ink:#23201b; --muted:#6f6a60;
+    --line:#e6e2d9; --accentA:#2f6f4f; --accentB:#7a4b2b; --chip:#efece4;
+    --good:#2f6f4f; --warn:#b4532a; --shadow:0 1px 3px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.05);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 16px calc(80px + env(safe-area-inset-bottom))}
+  header.hero{text-align:center;padding:22px 6px 6px}
+  header.hero h1{font-size:clamp(1.5rem,5vw,2.5rem);margin:.1em 0;letter-spacing:-.02em}
+  header.hero p{color:var(--muted);max-width:640px;margin:.4em auto;font-size:.98rem}
+  .kicker{text-transform:uppercase;letter-spacing:.18em;font-size:.7rem;color:var(--accentA);font-weight:700}
+  .status{display:inline-flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;background:var(--card);
+    border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin:12px auto 0;box-shadow:var(--shadow);
+    font-size:.85rem}
+  .status b{color:var(--accentA)}
+
+  nav.tabs{position:sticky;top:0;z-index:30;background:rgba(246,245,241,.94);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+    display:flex;gap:6px;justify-content:flex-start;padding:10px 6px;margin:14px -16px 20px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);
+    padding:9px 14px;border-radius:999px;font-size:.85rem;font-weight:600;cursor:pointer;transition:.15s;
+    white-space:nowrap;flex:0 0 auto}
+  nav.tabs button:hover{border-color:var(--accentA)}
+  nav.tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  section.panel{display:none}
+  section.panel.active{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  h2.section-title{font-size:1.4rem;margin:24px 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h2.section-title .badge{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+    color:#fff;background:var(--accentA);padding:4px 10px;border-radius:999px}
+  .cycleB h2.section-title .badge{background:var(--accentB)}
+  .date-range{font-size:.85rem;color:var(--muted);font-weight:600}
+  .lead{color:var(--muted);margin:.2em 0 16px;font-size:.95rem}
+
+  .overview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0 8px}
+  .ov{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;box-shadow:var(--shadow)}
+  .ov .d{font-size:.68rem;font-weight:700;color:var(--accentA);letter-spacing:.05em;text-transform:uppercase}
+  .cycleB .ov .d{color:var(--accentB)}
+  .ov .m{font-weight:600;margin-top:3px;font-size:.92rem;line-height:1.25}
+  .week-label{grid-column:1/-1;font-weight:700;color:var(--muted);font-size:.78rem;
+    text-transform:uppercase;letter-spacing:.1em;margin-top:6px}
+
+  .recipe{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:18px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .recipe .day-tag{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;color:#fff;background:var(--accentA);padding:4px 10px;border-radius:8px;margin-bottom:8px}
+  .cycleB .recipe .day-tag{background:var(--accentB)}
+  .recipe h3{margin:.1em 0 .15em;font-size:1.22rem;letter-spacing:-.01em}
+  .recipe .meta{color:var(--muted);font-size:.84rem;margin-bottom:14px}
+  .recipe .meta a{color:var(--accentA);text-decoration:none;border-bottom:1px dotted}
+  .cols{display:grid;grid-template-columns:0.9fr 1.4fr;gap:22px}
+  @media(max-width:680px){.cols{grid-template-columns:1fr;gap:14px}}
+  .cols h4{font-size:.76rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);
+    margin:0 0 8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .ing-list{list-style:none;margin:0;padding:0}
+  .ing-list li{padding:3px 0 3px 18px;position:relative;font-size:.9rem}
+  .ing-list li::before{content:"";position:absolute;left:2px;top:11px;width:6px;height:6px;border-radius:50%;background:var(--accentA)}
+  .cycleB .ing-list li::before{background:var(--accentB)}
+  .sub-h{font-weight:700;font-size:.84rem;margin:10px 0 2px;color:var(--ink)}
+  ol.steps{margin:0;padding-left:20px}
+  ol.steps li{margin-bottom:8px;font-size:.91rem}
+  .note-box{background:var(--chip);border-radius:10px;padding:10px 12px;font-size:.84rem;color:var(--muted);margin-top:12px}
+
+  .grocery-intro{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;
+    box-shadow:var(--shadow);margin:6px 0 14px;position:sticky;top:58px;z-index:20}
+  .totals{display:flex;gap:16px;flex-wrap:wrap}
+  .totbox{text-align:center}
+  .totbox .lab{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .totbox .val{font-size:1.3rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .totbox .val.green{color:var(--good)}
+  .btn-reset{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:.78rem;cursor:pointer;color:var(--muted)}
+  .btn-reset:hover{border-color:var(--warn);color:var(--warn)}
+
+  .additem{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--card);border:1px dashed var(--line);
+    border-radius:12px;padding:12px 14px;margin:0 0 14px}
+  .additem .ai-title{font-weight:700;font-size:.85rem;width:100%;margin-bottom:2px}
+  .additem input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.9rem;background:#fff}
+  .additem input.nm{flex:2 1 160px}
+  .additem input.q{flex:2 1 160px}
+  .additem input.pr{flex:0 0 92px}
+  .additem button{border:none;background:var(--accentA);color:#fff;border-radius:8px;padding:9px 16px;
+    font-size:.88rem;font-weight:700;cursor:pointer}
+  .additem button:hover{filter:brightness(1.07)}
+
+  .gsection{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:12px 0;box-shadow:var(--shadow);overflow:hidden}
+  .gsection > h4{margin:0;padding:12px 16px;background:var(--chip);font-size:.8rem;text-transform:uppercase;
+    letter-spacing:.1em;display:flex;justify-content:space-between;align-items:center}
+  .gsection.custom > h4{background:#eef4f0}
+  .gsection > h4 .sub{font-weight:700;color:var(--muted);letter-spacing:0;text-transform:none;font-size:.85rem}
+  ul.glist{list-style:none;margin:0;padding:4px 0}
+  ul.glist li{display:flex;align-items:center;gap:12px;padding:9px 16px;border-top:1px solid var(--line)}
+  ul.glist li:first-child{border-top:none}
+  ul.glist li.checked label .nm{text-decoration:line-through;color:var(--muted)}
+  ul.glist li.checked{background:#fbfdfb}
+  ul.glist input[type=checkbox]{width:22px;height:22px;accent-color:var(--accentA);cursor:pointer;flex:none}
+  ul.glist label{flex:1;cursor:pointer;display:flex;flex-direction:column;min-width:0}
+  ul.glist .nm{font-weight:600;font-size:.92rem}
+  ul.glist .qty{font-size:.77rem;color:var(--muted)}
+  ul.glist .price{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  ul.glist .price.staple{color:var(--accentB)}
+  .staple-flag{font-size:.6rem;background:var(--accentB);color:#fff;padding:1px 6px;border-radius:6px;margin-left:6px;vertical-align:middle;letter-spacing:.04em}
+  .remove-x{border:none;background:transparent;color:var(--warn);font-size:1.1rem;cursor:pointer;padding:0 4px;line-height:1;flex:none}
+  .cust-price-in{width:74px;border:1px solid var(--line);border-radius:7px;padding:5px 7px;font-size:.85rem;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+
+  .staple-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px;box-shadow:var(--shadow);margin:12px 0}
+  .staple-card h3{margin:.2em 0 .1em;font-size:1.05rem}
+  .staple-card .sc-note{color:var(--muted);font-size:.85rem;margin:0 0 10px}
+  table.staples{width:100%;border-collapse:collapse}
+  table.staples th{text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:8px 8px;border-bottom:2px solid var(--line)}
+  table.staples td{padding:8px 8px;border-bottom:1px solid var(--line);font-size:.9rem}
+  table.staples td.unit{color:var(--muted);font-size:.8rem;white-space:nowrap}
+  td.price-cell{text-align:right;white-space:nowrap}
+  .price-input{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:8px;padding:4px 8px;background:#fff}
+  .price-input span{color:var(--muted)}
+  .price-input input{border:none;outline:none;width:62px;font-size:.92rem;font-weight:700;font-variant-numeric:tabular-nums;background:transparent;color:var(--ink);text-align:right}
+  .price-input:focus-within{border-color:var(--accentA)}
+  .saved-pop{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+    padding:8px 16px;border-radius:999px;font-size:.82rem;opacity:0;transition:.3s;z-index:50;pointer-events:none}
+  .saved-pop.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:36px;padding-top:18px;border-top:1px solid var(--line)}
+  .tip{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:12px 16px;font-size:.85rem;color:var(--muted);margin:10px 0}
+  @media print{nav.tabs,.btn-reset,.additem,.remove-x{display:none}section.panel{display:block!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="kicker">Rotating Dinner Plan</div>
+    <h1>Two-Week Cycles, On Repeat</h1>
+    <p>Fourteen distinct dinners per cycle — no repeats inside a cycle. The plan advances itself every other Sunday: this week's <em>Cycle B</em> automatically becomes next period's <em>Cycle A</em>, and a fresh Cycle B rolls in.</p>
+    <div class="status" id="statusBar"></div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-t="overview" class="active">Overview</button>
+    <button data-t="cycleA">Cycle A Recipes</button>
+    <button data-t="groceryA">Cycle A Grocery</button>
+    <button data-t="cycleB">Cycle B Recipes</button>
+    <button data-t="groceryB">Cycle B Grocery</button>
+    <button data-t="prices">Prices</button>
+  </nav>
+
+  <section class="panel active" id="overview">
+    <h2 class="section-title">This Period at a Glance</h2>
+    <p class="lead">Eight “anchor” dinners appear every cycle; six rotate in and out, so a new Cycle B never repeats the cycle it follows. Proteins are spread so you’re never eating chicken (or beef) two nights running.</p>
+    <div class="cycleA">
+      <h3 style="margin:16px 0 0">Cycle A <span class="date-range" id="ovARange"></span></h3>
+      <div class="overview-grid" id="ovA"></div>
+    </div>
+    <div class="cycleB">
+      <h3 style="margin:24px 0 0">Cycle B <span class="date-range" id="ovBRange"></span></h3>
+      <div class="overview-grid" id="ovB"></div>
+    </div>
+    <div class="tip" style="margin-top:20px">💡 <strong>How it works:</strong> Each cycle has its own consolidated grocery list grouped by store section. Tap items to check them off — and you can <strong>add your own items</strong> right on the grocery tab. Set real prices on the <strong>Prices</strong> tab (every item is editable) and they flow into the totals. Everything saves in your browser; your “next cycle” checklist carries over when it becomes the current cycle.</div>
+  </section>
+
+  <section class="panel cycleA" id="cycleA">
+    <h2 class="section-title"><span class="badge">Cycle A</span> Recipes <span class="date-range" id="recARange"></span></h2>
+    <div id="recipesA"></div>
+  </section>
+
+  <section class="panel cycleA" id="groceryA">
+    <h2 class="section-title"><span class="badge">Cycle A</span> Grocery List</h2>
+    <div class="grocery-intro">
+      <div class="totals">
+        <div class="totbox"><div class="lab">Full List</div><div class="val" id="totA">$0.00</div></div>
+        <div class="totbox"><div class="lab">Still to Buy</div><div class="val green" id="remA">$0.00</div></div>
+        <div class="totbox"><div class="lab">Checked</div><div class="val" id="cntA">0 / 0</div></div>
+      </div>
+      <button class="btn-reset" onclick="resetChecks('A')">Reset checkboxes</button>
+    </div>
+    <div class="additem">
+      <div class="ai-title">➕ Add your own item</div>
+      <input class="nm" id="aiNameA" placeholder="Item (e.g. Paper towels)">
+      <input class="q" id="aiQtyA" placeholder="Qty / note (optional)">
+      <input class="pr" id="aiPriceA" type="number" step="0.01" min="0" placeholder="$0.00">
+      <button onclick="addCustom('A')">Add</button>
+    </div>
+    <div id="groceryListA"></div>
+    <div class="tip">Prices are Kroger / budget estimates — edit any of them on the <strong>Prices</strong> tab. Items tagged <span class="staple-flag">STAPLE</span> are driven by a per-unit price there.</div>
+  </section>
+
+  <section class="panel cycleB" id="cycleB">
+    <h2 class="section-title"><span class="badge">Cycle B</span> Recipes <span class="date-range" id="recBRange"></span></h2>
+    <div id="recipesB"></div>
+  </section>
+
+  <section class="panel cycleB" id="groceryB">
+    <h2 class="section-title"><span class="badge">Cycle B</span> Grocery List</h2>
+    <div class="grocery-intro">
+      <div class="totals">
+        <div class="totbox"><div class="lab">Full List</div><div class="val" id="totB">$0.00</div></div>
+        <div class="totbox"><div class="lab">Still to Buy</div><div class="val green" id="remB">$0.00</div></div>
+        <div class="totbox"><div class="lab">Checked</div><div class="val" id="cntB">0 / 0</div></div>
+      </div>
+      <button class="btn-reset" onclick="resetChecks('B')">Reset checkboxes</button>
+    </div>
+    <div class="additem">
+      <div class="ai-title">➕ Add your own item</div>
+      <input class="nm" id="aiNameB" placeholder="Item (e.g. Coffee)">
+      <input class="q" id="aiQtyB" placeholder="Qty / note (optional)">
+      <input class="pr" id="aiPriceB" type="number" step="0.01" min="0" placeholder="$0.00">
+      <button onclick="addCustom('B')">Add</button>
+    </div>
+    <div id="groceryListB"></div>
+    <div class="tip">Prices are Kroger / budget estimates — edit any of them on the <strong>Prices</strong> tab.</div>
+  </section>
+
+  <section class="panel" id="prices">
+    <h2 class="section-title">Price Editor</h2>
+    <p class="lead">Set the real current price of <strong>every item</strong>. Staples are priced per unit (one change updates every recipe that uses them); everything else is priced per shopping item. All edits save in this browser and flow straight into both cycle totals.</p>
+    <div class="staple-card">
+      <h3>Staple unit prices</h3>
+      <p class="sc-note">These drive multiple grocery lines (e.g. chicken price × pounds needed).</p>
+      <table class="staples"><thead><tr><th>Staple</th><th>Priced per</th><th class="price-cell">Price</th></tr></thead>
+        <tbody id="stapleRows"></tbody></table>
+    </div>
+    <div id="priceCatalog"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn-reset" onclick="resetPrices()">Reset all prices to defaults</button>
+    </div>
+    <div class="tip">Defaults reflect typical Kroger budget pricing as of mid-2026.</div>
+  </section>
+
+  <footer>
+    Self-advancing plan · recipes reproduced from their original sources (linked on each card) · inline recipes used exactly as provided. 🍽️
+  </footer>
+</div>
+<div class="saved-pop" id="savedPop">✓ Saved</div>
+
+<script>
+/* ============================ STAPLES ============================ */
+const STAPLE_DEFAULTS = {
+  chicken_breast:{label:"Chicken breast (boneless, skinless)", per:"per lb",      price:3.49},
+  ground_beef:   {label:"Ground beef (80/20)",                 per:"per lb",      price:4.49},
+  pork_tenderloin:{label:"Pork tenderloin",                    per:"per lb",      price:3.99},
+  bacon:         {label:"Bacon",                               per:"per lb pack", price:4.99},
+  milk:          {label:"Milk",                                per:"per gallon",  price:2.99},
+  butter:        {label:"Butter (1 lb / 4 sticks)",            per:"per box",     price:3.49},
+  eggs:          {label:"Eggs",                                per:"per dozen",   price:2.49},
+  shred_cheese:  {label:"Shredded cheese",                     per:"per 8 oz bag",price:2.49},
+  pasta:         {label:"Pasta / noodles",                     per:"per 16 oz box",price:1.25},
+  flour:         {label:"All-purpose / bread flour",           per:"per 5 lb bag",price:2.49},
+  tortillas:     {label:"Tortillas (flour)",                   per:"per pack",    price:2.50}
+};
+let staplePrices = {};
+let prices = {}; // name -> price (non-staple items)
+
+/* ============================ RECIPES ============================ */
+const R = {
+  bpc:{title:"Black Pepper Chicken", serves:"4", src:"omnivorescookbook.com", url:"https://omnivorescookbook.com/black-pepper-chicken/",
+    ing:[["Chicken","1 lb chicken breasts (or thighs), sliced against the grain into 1/4\" thick pieces"],
+      ["Marinade","1 Tbsp light soy sauce","1 Tbsp Shaoxing wine (or dry sherry)","1 Tbsp cornstarch"],
+      ["Sauce","1/2 cup chicken broth","2 Tbsp light soy sauce","2 Tbsp Shaoxing wine","2 tsp dark soy sauce","1 Tbsp cornstarch","1 1/2 Tbsp sugar","2 tsp coarsely ground black pepper","1/8 tsp salt"],
+      ["Stir fry","2 Tbsp peanut oil (or vegetable oil)","1 Tbsp minced ginger","2 cloves garlic, minced","1/2 white onion, chopped","2 bell peppers, chopped"]],
+    steps:["Combine chicken, soy sauce, Shaoxing wine, and cornstarch in a medium bowl. Gently mix by hand until the chicken is coated in a thin layer. Marinate 10–15 minutes.",
+      "Combine all the sauce ingredients in a small bowl. Mix well and set aside.",
+      "Heat 1 Tbsp oil in a large skillet over medium-high until hot. Add the chicken and spread into a single layer. Sear ~1 minute until lightly browned, flip, cook 30 sec–1 min until both sides are browned but still a bit pink inside. Transfer to a plate.",
+      "Add the remaining 1 Tbsp oil. Add ginger and garlic; stir until fragrant. Add onion and peppers and stir-cook 20 seconds.",
+      "Stir the sauce until the cornstarch is fully dissolved, pour into the skillet, and stir immediately until it thickens enough to coat a spoon. Add the chicken back and toss to coat. Turn off heat and transfer everything to a plate so it stops cooking.",
+      "Serve hot over rice."]},
+  tacos:{title:"Slow-Cooker Shredded Chicken Tacos", serves:"6", src:"slowcookermeals.com", url:"https://slowcookermeals.com/slow-cooker-shredded-chicken-tacos/",
+    ing:[["","2 lbs boneless, skinless chicken breasts (about 4 medium)","1 (16 oz) jar of your favorite salsa","1 (1.5 oz) packet taco seasoning","1 tsp black pepper","1 (4 oz) can diced green chilies","Tortillas + toppings, to serve"]],
+    steps:["Place chicken breasts in the slow cooker. Cover with salsa and sprinkle taco seasoning, black pepper, and green chilies over the top.",
+      "Cover and cook on low 7–8 hours or high 2½–3 hours. When done, shred the chicken with two forks and stir into the sauce.",
+      "Serve on tortillas with your favorite toppings."]},
+  padthai:{title:"Chicken Pad Thai", serves:"4", src:"tastesbetterfromscratch.com", url:"https://tastesbetterfromscratch.com/pad-thai/",
+    ing:[["","8 oz flat rice noodles","3 Tbsp oil","3 cloves garlic, minced","8 oz chicken (or shrimp / extra-firm tofu), cut into small pieces","2 eggs","1 cup fresh bean sprouts","1 red bell pepper, thinly sliced","3 green onions, chopped","1/2 cup dry roasted peanuts","2 limes","1/2 cup fresh cilantro, chopped"],
+      ["Sauce","3 Tbsp fish sauce","1 Tbsp low-sodium soy sauce","5 Tbsp light brown sugar","2 Tbsp rice vinegar (or tamarind paste)","1 Tbsp Sriracha (or more, to taste)","2 Tbsp creamy peanut butter (optional)"]],
+    steps:["Cook noodles per package, just until tender. Rinse under cold water.",
+      "Make the sauce by combining all sauce ingredients in a bowl. Set aside.",
+      "Stir-fry: Heat 1½ Tbsp oil in a wok over medium-high. Add chicken, garlic, and bell pepper. Cook chicken until just cooked through, ~3–4 minutes, flipping once.",
+      "Push everything to the side. Add a little more oil and the beaten eggs. Scramble, breaking into small pieces as they cook.",
+      "Add noodles, sauce, bean sprouts, and peanuts (reserve some peanuts for topping). Toss to combine.",
+      "Garnish with green onions, extra peanuts, cilantro, and lime wedges. Serve immediately."]},
+  stirfry:{title:"Chicken Stir Fry Noodles", serves:"~4", src:"eatwell101.com", url:"https://www.eatwell101.com/chicken-pasta-skillet-recipe",
+    ing:[["","1 lb skinless, boneless chicken breast, cut into strips","1 Tbsp olive oil","3 garlic cloves, finely minced","1 medium carrot, julienned or shredded","8 oz spaghetti noodles","3 cups broccoli florets","Chopped scallion + toasted sesame seeds, to garnish"],
+      ["Sauce","1/2 tsp grated or ground ginger","1 Tbsp brown sugar (or honey)","1/4 cup low-sodium soy sauce","2 Tbsp hoisin sauce","2 tsp sesame oil","1/4 tsp crushed red pepper flakes (optional)","Fresh cracked black pepper, to taste"]],
+    steps:["In a large pot of boiling salted water, cook the spaghetti per package directions. Add the broccoli florets for the last 5 minutes and cook until tender. Drain noodles and broccoli and set aside.",
+      "While the pasta cooks, whisk together the brown sugar, soy sauce, hoisin, sesame oil, ginger, red pepper, and black pepper in a small bowl.",
+      "Season chicken strips with salt and pepper. Add olive oil to a skillet and cook chicken in an even layer over medium heat, turning occasionally, 2–3 minutes until golden. Stir in garlic and carrots and cook a minute more until cooked through.",
+      "Transfer the cooked spaghetti and broccoli to the skillet, pour the sauce on top, and toss until fully incorporated. Reheat a couple minutes and serve garnished with scallion and toasted sesame seeds."]},
+  thainoodles:{title:"Spicy Thai Noodles", serves:"6", src:"thechunkychef.com", url:"https://www.thechunkychef.com/spicy-thai-noodles/",
+    ing:[["","1 lb linguine pasta (or fettuccine / spaghetti)","1/2 – 1 1/2 Tbsp red pepper flakes (to taste)","2 Tbsp vegetable oil","1/3 – 1/2 cup toasted sesame oil","1 1/2 tsp chili paste","6 Tbsp soy sauce","6 Tbsp honey","Scallions, carrots, peanuts, cilantro, Sriracha & sesame seeds, to garnish"]],
+    steps:["Chop garnishes and set aside.","Boil pasta, then drain.",
+      "While the pasta boils, heat the oils in a large skillet with the red pepper flakes.",
+      "Once the oil is hot, strain out the pepper flakes, reserving the oil in a bowl. Add the reserved oil back to the skillet and add the chili paste. Whisk in the soy sauce and honey.",
+      "Toss the pasta in the skillet with the sauce.",
+      "Serve hot, room temperature, or cold. Top with garnishes and enjoy."],
+    note:"Vegetarian as written — add sliced cooked chicken if you want a protein."},
+  snackwraps:{title:"Buffalo Ranch Snack Wraps", serves:"4", src:"Your recipe (inline)", url:"",
+    ing:[["","Breaded chicken strips/patties (frozen)","Shredded lettuce","Mexican-blend shredded cheese","Buffalo sauce","Ranch dressing","Small flour tortillas"]],
+    steps:["Cook the breaded chicken per package directions.","Toss or drizzle the cooked chicken with buffalo sauce.",
+      "Lay chicken on a tortilla with shredded lettuce, Mexican cheese, and a drizzle of ranch.","Fold up and serve."]},
+  crunchwraps:{title:"Beef Crunch Wraps", serves:"4–6", src:"Your recipe (inline)", url:"",
+    ing:[["","1 lb ground beef","Kroger queso","Shredded lettuce","Mexican-blend shredded cheese","Diced tomatoes","Large burrito flour tortillas","Corn tortillas / tostadas (the crunch layer)","Taco seasoning"]],
+    steps:["Brown the ground beef and drain. Add taco seasoning + a splash of water and simmer until thickened.",
+      "On a large burrito tortilla, layer seasoned beef and queso in the center, then set a corn tortilla on top.",
+      "Add lettuce, diced tomatoes, and Mexican cheese on top of the corn tortilla.",
+      "Fold the edges of the large tortilla up over the center, pleating as you go.",
+      "Crisp seam-side-down in a hot skillet until golden, then flip and crisp the other side."]},
+  garlicbroccoli:{title:"Spicy Garlic Chicken & Broccoli Noodle Bowl", serves:"4", src:"chefnovarecipes.com", url:"https://www.chefnovarecipes.com/spicy-garlic-chicken-and-broccoli-noodle-bowl/",
+    ing:[["","1 lb chicken breast, sliced","8 oz noodles (soba, rice, or your choice)","2 cups broccoli florets","4 cloves garlic, minced","2 Tbsp soy sauce","1 Tbsp chili paste","2 Tbsp olive oil","Salt and pepper, to taste"]],
+    steps:["Cook the noodles per package until al dente, then drain and set aside.",
+      "In a large skillet, heat the olive oil over medium until it shimmers.",
+      "Add the minced garlic and sauté until golden and fragrant, about 1 minute.",
+      "Add the sliced chicken and cook until browned and no longer pink, about 5–7 minutes.",
+      "Once the chicken is nearly cooked, add the broccoli florets and stir-fry 3–4 minutes.",
+      "Pour in the soy sauce and chili paste, stirring to coat.",
+      "Add the cooked noodles and toss everything together.",
+      "Season with salt and pepper to taste before serving hot."]},
+  alfredo:{title:"Chicken Alfredo", serves:"4", src:"Your recipe (inline)", url:"",
+    ing:[["","1 lb chicken","1 lb noodles (fettuccine)","1 jar/can Alfredo sauce"]],
+    steps:["Boil the noodles per package; drain.","Season and cook the chicken, then slice.",
+      "Warm the Alfredo sauce, then toss with the noodles and chicken. Serve."]},
+  spaghetti:{title:"Spaghetti & Meatballs", serves:"4–6", src:"Your recipe (inline)", url:"",
+    ing:[["","1 lb noodles (spaghetti)","1 lb meatballs","1 jar/can pasta sauce","Italian seasoning"]],
+    steps:["Boil the spaghetti per package; drain.",
+      "Heat the pasta sauce with the meatballs and a shake of Italian seasoning until the meatballs are heated through.",
+      "Serve the sauce and meatballs over the spaghetti."]},
+  garlicpasta:{title:"Roasted Garlic Spaghetti", serves:"4–6", src:"motherthyme.com", url:"https://www.motherthyme.com/2017/01/roasted-garlic-spaghetti.html",
+    ing:[["","2 whole garlic heads","1/2 tsp olive oil","1 lb spaghetti","1/2 cup reserved pasta water","1 stick (1/2 cup) butter","2 Tbsp freshly grated Parmesan","2–3 Tbsp chopped parsley (or basil)","1/2 tsp salt, plus more to taste","1/4 tsp black pepper, plus more to taste","Shaved Parmesan, to garnish (optional)","Pinch of red pepper flakes (optional)"]],
+    steps:["Preheat oven to 400°F.",
+      "Cut the tops off the garlic heads to expose the cloves. Drizzle with olive oil and a pinch of salt.",
+      "Wrap garlic in foil (or set each head in a muffin tin) and roast 35–40 minutes until soft. Cool to the touch.",
+      "Squeeze the garlic out of the cloves and mash with a fork.",
+      "Bring a large pot of water to a boil, add spaghetti, and cook per package directions. Drain, reserving 1/2 cup pasta water.",
+      "Melt the butter in the same pot or a large deep skillet over medium heat.",
+      "Add the roasted garlic, then the cooked spaghetti and reserved pasta water; stir until coated and heated through.",
+      "Off heat, stir in the cheese, herbs, and red pepper flakes if using. Season with salt and pepper and garnish with shaved Parmesan."]},
+  pork:{title:"Honey Garlic Pork Tenderloin", serves:"6", src:"downshiftology.com", url:"https://downshiftology.com/recipes/honey-garlic-pork-tenderloin/",
+    ing:[["","2 (1 lb each) pork tenderloins","1 tsp garlic powder","1 tsp sweet paprika","1 tsp onion powder","1 tsp dried thyme","1 tsp kosher salt","1/2 tsp freshly ground black pepper","2 Tbsp extra-virgin olive oil","1/2 cup honey","1/4 cup tamari / soy sauce","2 Tbsp apple cider vinegar","6 garlic cloves, minced"]],
+    steps:["Preheat the oven to 375°F. In a small bowl, stir together the garlic powder, paprika, onion powder, thyme, salt, and pepper. Set aside.",
+      "In a medium bowl, whisk together the honey, soy sauce, vinegar, and garlic. Set aside.",
+      "Sprinkle the dry spice blend all over the pork and rub it in with your hands.",
+      "In a large oven-safe skillet, heat the oil over medium-high. Sear the pork, turning occasionally, until browned on all sides, about 4 minutes total.",
+      "Turn off the stove, add the sauce to the pan, and turn the pork to coat. Transfer to the oven and roast 15–20 minutes, until an instant-read thermometer reads 140°F.",
+      "Return the skillet to the stove; remove the pork to a plate and cover with foil to rest 5–10 minutes. Simmer the remaining sauce 1–2 minutes until slightly reduced and thickened.",
+      "Slice the pork into 1/2-inch slices, arrange on a platter, drizzle with the sauce, and serve."]},
+  breakfast:{title:"Breakfast for Dinner", serves:"4", src:"Your recipe (inline)", url:"",
+    ing:[["","Pancakes (mix + as needed)","Bacon","Sausage","Eggs"]],
+    steps:["Cook the bacon and sausage.","Scramble or fry the eggs.","Griddle the pancakes.","Serve everything together."]},
+  helper:{title:"One-Pot Cheeseburger Macaroni (Hamburger Helper)", serves:"6", src:"jawnsicooked.com", url:"https://jawnsicooked.com/dinner/one-pot-homemade-cheeseburger-macaroni-hamburger-helper/",
+    ing:[["","2 Tbsp butter","1 small onion, diced","1 lb lean ground beef","1 Tbsp tomato paste","2 tsp smoked paprika","1 1/2 tsp garlic powder","1 tsp onion powder","1 1/2 tsp seasoned salt (or table salt)","1 tsp sugar","1/2 tsp freshly ground black pepper","2 Tbsp all-purpose flour","2 cups beef broth","1 1/2 cups milk (not skim)","2 cups (1/2 lb) dry cavatappi or macaroni","2 cups (8 oz block) grated yellow sharp cheddar"]],
+    steps:["In a large deep sauté pan or cast iron skillet, melt the butter over medium heat.",
+      "Add the diced onion and cook, stirring occasionally, until translucent, about 5 minutes.",
+      "Add the ground beef and cook, breaking it up, until browned, 4–5 minutes.",
+      "Add the tomato paste, stir into the meat, and cook 2–3 minutes until slightly deepened in color.",
+      "Add the smoked paprika, garlic powder, onion powder, salt, sugar, pepper, and flour; stir until combined and cook 1 minute.",
+      "Slowly whisk in the beef broth, then add the milk and stir well.",
+      "Add the pasta, raise heat to high, and bring to a boil.",
+      "Reduce heat to medium-low and simmer until the pasta is cooked through, stirring occasionally so it doesn't stick, 10–12 minutes.",
+      "Remove from heat and stir in the cheese."]},
+  burgers:{title:"Burgers (with homemade seasoning)", serves:"4", src:"Your recipe + simplejoy.com seasoning", url:"https://www.simplejoy.com/hamburger-seasoning/",
+    ing:[["Burgers","1 lb ground beef (80/20)","American cheese","Hamburger buns","1 Tbsp Hamburger Seasoning (below)"],
+      ["Hamburger Seasoning (makes 9 Tbsp)","2 Tbsp paprika","2 Tbsp brown sugar","1 Tbsp onion powder","2 tsp table salt","2 tsp black pepper","2 tsp garlic powder","2 tsp cumin","1/2 tsp cayenne pepper"]],
+    steps:["Make the seasoning: mix all seasoning ingredients in a small bowl (makes 9 Tbsp / enough for 9 lbs of meat; store the rest airtight up to 6 months).",
+      "Divide 1 lb of 80/20 ground beef into four equal patties, indenting the middle of each for even cooking.",
+      "Use 1 Tbsp of the seasoning total to rub into both sides of all four patties (or mix 1 Tbsp into the pound of beef).",
+      "Grill or skillet the patties over medium heat about 3 1/2 minutes per side for medium; add American cheese near the end to melt.",
+      "Serve on buns with your favorite toppings."]},
+  mac:{title:"Stovetop Mac & Cheese", serves:"6", src:"Your recipe (photo)", url:"",
+    ing:[["","1 stick butter","2 Tbsp flour","3 cups milk","4 oz Monterey Jack cheese","4 oz sharp cheddar cheese","16 oz elbow macaroni","Salt, pepper, paprika"]],
+    steps:["Boil the macaroni noodles.","Melt 1 stick of butter in a large skillet over medium heat.",
+      "Put in the flour; mix.","Pour in the milk; add salt, pepper, and paprika.",
+      "Once it thickens, add the Monterey Jack and sharp cheddar; let melt.",
+      "Strain the noodles and add to the cheese sauce.","Broil the mac & cheese for 3–5 minutes."]},
+  tacobowls:{title:"Ground Beef Taco Bowls", serves:"4", src:"spicedbites.com", url:"https://spicedbites.com/ground-beef-taco-bowls",
+    ing:[["","1 lb ground beef (85/15 or 90/10)","1 cup long-grain white rice, rinsed","2 cups water (for the rice)","2 Tbsp taco seasoning","1 can (15 oz) black beans, rinsed & drained","1 cup sweet corn (canned or frozen)","2 medium tomatoes, finely diced","2 cups iceberg lettuce, shredded","1/2 cup sour cream","1/4 cup fresh cilantro, chopped"]],
+    steps:["Cook the rice: rinse under cold water, combine with 2 cups water in a saucepan, and bring to a boil.",
+      "Reduce heat to low, cover, and simmer 18 minutes. Let stand 5 minutes, then fluff.",
+      "Prepare the beef: heat oil in a skillet over medium-high and brown the beef until crumbled and fully cooked, stirring in the taco seasoning.",
+      "Assemble: place rice in bowls and arrange the beef, beans, corn, tomatoes, and lettuce in sections.",
+      "Add a dollop of sour cream to the center and sprinkle with fresh cilantro."]},
+  kfc:{title:"Homemade KFC Famous Bowl (Copycat)", serves:"4", src:"imhungryforthat.com", url:"https://imhungryforthat.com/kfc-famous-bowl-copycat-recipe/",
+    ing:[["","2 1/2 cups mashed potatoes","2 cups corn kernels (frozen)","10 oz popcorn chicken or chicken nuggets","1 cup shredded cheddar cheese","1/2 cup Heinz classic chicken gravy"]],
+    steps:["Preheat the oven to 350°F.",
+      "Cook the popcorn chicken/nuggets in an air fryer at 390°F for 10 minutes (or bake per package directions).",
+      "Prepare the mashed potatoes per package.",
+      "Layer the casserole: mashed potatoes on the bottom, then corn, then chicken, topped with shredded cheese.",
+      "Bake 10–15 minutes, until the cheese melts.",
+      "Transfer to bowls and top with gravy."]},
+  pizza:{title:"Pepperoni Pizza (homemade dough)", serves:"4 (dough makes 2 crusts)", src:"foodnetwork.com + thekitchn.com", url:"https://www.thekitchn.com/pepperoni-pizza-22931782",
+    ing:[["Pizza Dough (Bobby Flay — makes 2 crusts)","3 1/2 – 4 cups bread flour, plus more for rolling","1 tsp sugar","1 envelope instant dry yeast","2 tsp kosher salt","1 1/2 cups water (110°F)","2 Tbsp olive oil, plus 2 tsp"],
+      ["Pepperoni Pizza (The Kitchn)","1 lb pizza dough, at room temperature","2 Tbsp olive oil","1/2 – 1 cup tomato sauce","1 cup shredded low-moisture mozzarella","1/2 cup grated Parmesan","2 oz pepperoni slices (about 1/2 cup)","Red pepper flakes, to serve (optional)"]],
+    steps:["DOUGH: Combine the bread flour, sugar, yeast, and salt in a stand mixer. With the mixer running, add the water and 2 Tbsp oil and beat until the dough forms a ball (add flour 1 Tbsp at a time if sticky, or water if dry). Knead on a floured surface into a smooth, firm ball.",
+      "DOUGH: Grease a large bowl with the remaining 2 tsp oil, add the dough, cover with plastic wrap, and let it double in a warm spot, about 1 hour. Divide into 2 pieces, cover, and rest 10 minutes.",
+      "PIZZA: Bring 1 lb dough to room temperature. Set a rack in the middle of the oven and heat to 450°F.",
+      "Coat a rimmed baking sheet with 2 Tbsp olive oil. Place the dough on it and press out toward the edges into an even crust (don't tear it).",
+      "Spread 1/2 cup tomato sauce in a thin layer leaving a border (add more if desired). Sprinkle on the mozzarella and Parmesan, then lay the pepperoni in a single layer.",
+      "Bake 15–20 minutes, until the edges are golden-brown and crispy and the cheese is melted. Rotate the pan halfway if your oven bakes unevenly. Cool 5 minutes, slice, and serve with red pepper flakes if desired."]},
+  zuppa:{title:"Instant Pot Pesto Zuppa Toscana", serves:"6", src:"halfbakedharvest.com", url:"https://www.halfbakedharvest.com/instant-pot-pesto-zuppa-toscana/",
+    ing:[["","4 slices thick-cut bacon, chopped","3/4 lb ground spicy Italian chicken sausage","1 yellow onion, chopped","4 cloves garlic, minced or grated","2 ribs celery, chopped","4 small Yukon gold or russet potatoes, peeled & chopped","6 cups low-sodium chicken broth","1/3 cup basil pesto","Juice of 1 lemon","1 pinch crushed red pepper flakes","Kosher salt & black pepper","1 bunch Tuscan or curly kale, roughly chopped","3/4 cup heavy cream (or whole milk)","1/2 cup grated Parmesan or Asiago","Fresh thyme, to serve (optional)"]],
+    steps:["Set the Instant Pot to sauté. Add the bacon and cook until crisp, about 5 minutes. Remove the bacon. If there's excess grease, drain all but 1 Tbsp. Add the chicken sausage and onions and brown all over, 5–8 minutes. Add the garlic, celery, and potatoes and cook 2 minutes. Turn the Instant Pot off.",
+      "Add the broth, pesto, lemon juice, red pepper flakes, and season with salt and pepper. Cover and cook on high pressure 8 minutes.",
+      "Use natural or quick release. Set to sauté and stir in the kale, cream, and Parmesan. Cook until the kale is wilted, about 10 minutes. Turn off and stir in the reserved bacon.",
+      "Serve topped with additional Parmesan and fresh thyme, if desired."]}
+};
+
+/* ============================ MENUS (rotate by period parity) ============================ */
+const MENU_1 = ["bpc","spaghetti","snackwraps","mac","crunchwraps","garlicbroccoli","pizza","pork","tacos","thainoodles","alfredo","burgers","stirfry","breakfast"];
+const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","pork"];
+
+/* ============================ GROCERY (one per menu) ============================ */
+const GROCERY_1 = [
+  {sec:"🥩 Meat & Seafood", items:[
+    {n:"Chicken breast", q:"~6 lb — Black Pepper Chicken, Spicy Garlic, Tacos, Alfredo, Stir Fry", staple:"chicken_breast", units:6},
+    {n:"Breaded chicken strips (frozen)", q:"1 box — Snack Wraps", price:5.99},
+    {n:"Frozen meatballs", q:"1 bag — Spaghetti", price:5.49},
+    {n:"Ground beef (80/20)", q:"2 lb — Crunch Wraps, Burgers", staple:"ground_beef", units:2},
+    {n:"Pork tenderloin", q:"2 lb (≈2 tenderloins) — Pork", staple:"pork_tenderloin", units:2},
+    {n:"Pepperoni", q:"1 pkg — Pizza", price:3.49},
+    {n:"Bacon", q:"1 lb — Breakfast", staple:"bacon", units:1},
+    {n:"Breakfast sausage", q:"1 lb — Breakfast", price:3.99}
+  ]},
+  {sec:"🥦 Produce", items:[
+    {n:"Yellow/white onions", q:"2 — Black Pepper Chicken & others", price:1.00},
+    {n:"Bell peppers (2)", q:"2 — Black Pepper Chicken", price:2.00},
+    {n:"Broccoli florets", q:"~1 lb / 2 crowns — Spicy Garlic, Stir Fry", price:2.50},
+    {n:"Garlic (2 heads)", q:"2 heads — multiple recipes", price:1.00},
+    {n:"Fresh ginger", q:"1 knob — Black Pepper Chicken, Stir Fry", price:0.79},
+    {n:"Carrots", q:"1 bag — Stir Fry + Thai garnish", price:1.49},
+    {n:"Iceberg lettuce", q:"1 head/bag — Snack & Crunch Wraps", price:1.99},
+    {n:"Roma tomatoes", q:"3 — Crunch Wraps", price:1.50},
+    {n:"Green onions", q:"1 bunch — Thai, Stir Fry", price:0.79},
+    {n:"Fresh cilantro", q:"1 bunch — Thai garnish", price:0.79}
+  ]},
+  {sec:"🧀 Dairy & Refrigerated", items:[
+    {n:"Butter", q:"1 lb box — Mac & Cheese", staple:"butter", units:1},
+    {n:"Milk", q:"1 gallon — Mac & Cheese", staple:"milk", units:1},
+    {n:"Monterey Jack cheese", q:"1 block (8 oz) — Mac & Cheese", price:2.99},
+    {n:"Sharp cheddar cheese (1 block)", q:"1 block (8 oz) — Mac & Cheese", price:2.49},
+    {n:"Mexican-blend shredded cheese", q:"2 bags (8 oz) — Snack & Crunch Wraps", staple:"shred_cheese", units:2},
+    {n:"Shredded mozzarella", q:"1 bag (8 oz) — Pizza", staple:"shred_cheese", units:1},
+    {n:"Grated Parmesan", q:"1 container — Pizza", price:3.49},
+    {n:"American cheese singles", q:"1 pack — Burgers", price:2.49},
+    {n:"Eggs", q:"1 dozen — Breakfast", staple:"eggs", units:1}
+  ]},
+  {sec:"🍝 Pasta, Sauces & Canned", items:[
+    {n:"Elbow macaroni", q:"16 oz — Mac & Cheese", staple:"pasta", units:1},
+    {n:"Spaghetti", q:"2 boxes — Spaghetti, Stir Fry", staple:"pasta", units:2},
+    {n:"Fettuccine", q:"1 box — Alfredo", staple:"pasta", units:1},
+    {n:"Linguine", q:"1 box — Spicy Thai Noodles", staple:"pasta", units:1},
+    {n:"Soba/rice noodles", q:"8 oz — Spicy Garlic Bowl", price:1.99},
+    {n:"Pasta sauce", q:"1 jar — Spaghetti", price:1.49},
+    {n:"Alfredo sauce", q:"1 jar — Alfredo", price:2.49},
+    {n:"Pizza tomato sauce", q:"1 can (8 oz) — Pizza", price:1.00},
+    {n:"Salsa", q:"1 jar (16 oz) — Chicken Tacos", price:1.99},
+    {n:"Diced green chilies", q:"1 can (4 oz) — Chicken Tacos", price:0.99},
+    {n:"Kroger queso dip", q:"1 jar — Crunch Wraps", price:2.99}
+  ]},
+  {sec:"🫙 Asian Pantry & Condiments", items:[
+    {n:"Light soy sauce", q:"1 bottle — multiple", price:2.49},
+    {n:"Dark soy sauce", q:"1 bottle — Black Pepper Chicken (optional; sub regular)", price:2.99},
+    {n:"Shaoxing wine (or dry sherry)", q:"1 bottle — Black Pepper Chicken (optional)", price:3.49},
+    {n:"Cornstarch", q:"1 box — Black Pepper Chicken", price:1.29},
+    {n:"Hoisin sauce", q:"1 jar — Stir Fry", price:2.49},
+    {n:"Toasted sesame oil", q:"1 bottle — Thai, Stir Fry", price:3.49},
+    {n:"Chili paste (sambal)", q:"1 jar — Spicy Garlic, Thai", price:2.99},
+    {n:"Sriracha", q:"1 bottle — Thai garnish", price:2.99},
+    {n:"Dry roasted peanuts", q:"1 jar — Thai garnish", price:2.49},
+    {n:"Sesame seeds", q:"1 jar — Thai, Stir Fry", price:2.00},
+    {n:"Honey", q:"1 bottle — Pork", price:3.49},
+    {n:"Apple cider vinegar", q:"1 bottle — Pork", price:1.99},
+    {n:"Chicken broth", q:"1 carton — Black Pepper Chicken", price:1.49},
+    {n:"Vegetable/peanut oil", q:"1 bottle — Black Pepper Chicken, Thai", price:2.99},
+    {n:"Olive oil", q:"1 bottle — multiple", price:4.49},
+    {n:"Buffalo sauce", q:"1 bottle — Snack Wraps", price:2.49},
+    {n:"Ranch dressing", q:"1 bottle — Snack Wraps", price:2.49}
+  ]},
+  {sec:"🌮 Bread, Tortillas & Mix", items:[
+    {n:"Bread/all-purpose flour", q:"1 bag (5 lb) — Pizza dough, Mac roux", staple:"flour", units:1},
+    {n:"Instant yeast", q:"1 packet/3-pack — Pizza", price:0.99},
+    {n:"Large burrito tortillas", q:"1 pack — Crunch Wraps", staple:"tortillas", units:1},
+    {n:"Small flour tortillas", q:"1 pack — Snack Wraps, Chicken Tacos", staple:"tortillas", units:1},
+    {n:"Corn tortillas / tostadas", q:"1 pack — Crunch Wraps", price:1.99},
+    {n:"Hamburger buns", q:"1 pack — Burgers", price:1.99},
+    {n:"Pancake mix", q:"1 box — Breakfast", price:2.49},
+    {n:"Pancake/maple syrup", q:"1 bottle — Breakfast", price:2.99},
+    {n:"Taco seasoning", q:"2 packets — Crunch Wraps, Chicken Tacos", price:1.00}
+  ]},
+  {sec:"🧂 Spice Rack (likely on hand)", items:[
+    {n:"Spice-rack restock", q:"Black pepper, salt, paprika, garlic/onion powder, thyme, cumin, cayenne, brown & white sugar, Italian seasoning, red pepper flakes — buy what you're out of", price:3.00}
+  ]}
+];
+const GROCERY_2 = [
+  {sec:"🥩 Meat & Seafood", items:[
+    {n:"Chicken breast", q:"~5 lb — Black Pepper Chicken, Tacos, Alfredo, Pad Thai", staple:"chicken_breast", units:5},
+    {n:"Frozen popcorn chicken / nuggets", q:"1 bag (≥10 oz) — KFC Bowls", price:5.99},
+    {n:"Frozen meatballs", q:"1 bag — Spaghetti", price:5.49},
+    {n:"Ground beef", q:"3 lb — Burgers, Hamburger Helper, Taco Bowls", staple:"ground_beef", units:3},
+    {n:"Pork tenderloin", q:"2 lb (≈2 tenderloins) — Pork", staple:"pork_tenderloin", units:2},
+    {n:"Ground spicy Italian chicken sausage", q:"3/4 lb — Zuppa Toscana", price:3.99},
+    {n:"Bacon", q:"1 pack — Zuppa Toscana", staple:"bacon", units:1},
+    {n:"Pepperoni", q:"1 pkg — Pizza", price:3.49}
+  ]},
+  {sec:"🥦 Produce", items:[
+    {n:"Yellow onions", q:"3 — Black Pepper Chicken, Hamburger Helper, Zuppa", price:1.50},
+    {n:"Bell peppers (3)", q:"3 (incl. 1 red) — Black Pepper Chicken, Pad Thai", price:3.00},
+    {n:"Garlic (3 heads)", q:"3 heads — Pork, Roasted Garlic Pasta, Zuppa, others", price:1.50},
+    {n:"Fresh ginger", q:"1 knob — Black Pepper Chicken", price:0.79},
+    {n:"Celery", q:"1 bunch — Zuppa Toscana", price:1.79},
+    {n:"Yukon gold / russet potatoes", q:"small bag — Zuppa Toscana", price:2.99},
+    {n:"Kale (Tuscan or curly)", q:"1 bunch — Zuppa Toscana", price:1.99},
+    {n:"Iceberg lettuce", q:"1 head — Taco Bowls", price:1.99},
+    {n:"Tomatoes", q:"2 — Taco Bowls", price:1.50},
+    {n:"Limes", q:"2 — Pad Thai", price:0.50},
+    {n:"Lemon", q:"1 — Zuppa Toscana", price:0.50},
+    {n:"Green onions", q:"1 bunch — Pad Thai", price:0.79},
+    {n:"Fresh cilantro", q:"1 bunch — Pad Thai, Taco Bowls", price:0.79},
+    {n:"Fresh parsley", q:"1 bunch — Roasted Garlic Pasta", price:0.79},
+    {n:"Bean sprouts", q:"1 bag — Pad Thai", price:1.49}
+  ]},
+  {sec:"🧀 Dairy & Refrigerated", items:[
+    {n:"Butter", q:"1 lb box — Mac, Roasted Garlic Pasta, Hamburger Helper", staple:"butter", units:1},
+    {n:"Milk", q:"1 gallon — Mac, Hamburger Helper", staple:"milk", units:1},
+    {n:"Heavy cream", q:"1 pint — Zuppa Toscana", price:2.49},
+    {n:"Monterey Jack cheese", q:"1 block (8 oz) — Mac & Cheese", price:2.99},
+    {n:"Sharp cheddar cheese (2 blocks)", q:"2 blocks (8 oz) — Mac, Hamburger Helper", price:4.98},
+    {n:"Shredded cheddar", q:"1 bag (8 oz) — KFC Bowls", staple:"shred_cheese", units:1},
+    {n:"Shredded mozzarella", q:"1 bag (8 oz) — Pizza", staple:"shred_cheese", units:1},
+    {n:"Grated Parmesan", q:"1 container — Pizza, Roasted Garlic, Zuppa", price:3.49},
+    {n:"American cheese singles", q:"1 pack — Burgers", price:2.49},
+    {n:"Sour cream", q:"1 tub — Taco Bowls", price:1.99},
+    {n:"Eggs", q:"1 dozen — Pad Thai", staple:"eggs", units:1}
+  ]},
+  {sec:"🍝 Pasta, Rice, Sauces & Canned", items:[
+    {n:"Spaghetti", q:"2 boxes — Spaghetti, Roasted Garlic Pasta", staple:"pasta", units:2},
+    {n:"Fettuccine", q:"1 box — Alfredo", staple:"pasta", units:1},
+    {n:"Flat rice noodles", q:"8 oz — Pad Thai", price:2.49},
+    {n:"Elbow macaroni", q:"16 oz — Mac & Cheese", staple:"pasta", units:1},
+    {n:"Cavatappi/macaroni", q:"1/2 lb — Hamburger Helper", price:1.25},
+    {n:"Long-grain white rice", q:"1 bag — Taco Bowls", price:1.99},
+    {n:"Pasta sauce", q:"1 jar — Spaghetti", price:1.49},
+    {n:"Alfredo sauce", q:"1 jar — Alfredo", price:2.49},
+    {n:"Pizza tomato sauce", q:"1 can (8 oz) — Pizza", price:1.00},
+    {n:"Salsa", q:"1 jar (16 oz) — Chicken Tacos", price:1.99},
+    {n:"Diced green chilies", q:"1 can (4 oz) — Chicken Tacos", price:0.99},
+    {n:"Black beans", q:"1 can (15 oz) — Taco Bowls", price:0.99},
+    {n:"Sweet corn", q:"1 can + 1 small frozen bag — Taco Bowls, KFC", price:2.00},
+    {n:"Basil pesto", q:"1 jar — Zuppa Toscana", price:3.49},
+    {n:"Heinz classic chicken gravy", q:"1 jar — KFC Bowls", price:1.99},
+    {n:"Instant mashed potatoes", q:"1 box — KFC Bowls", price:1.99},
+    {n:"Tomato paste", q:"1 small can — Hamburger Helper", price:0.89},
+    {n:"Chicken broth (low-sodium)", q:"2 cartons — Zuppa, Black Pepper Chicken", price:2.98},
+    {n:"Beef broth", q:"1 carton — Hamburger Helper", price:1.49}
+  ]},
+  {sec:"🫙 Asian & Thai Pantry", items:[
+    {n:"Light soy sauce", q:"1 bottle — Black Pepper Chicken, Pad Thai", price:2.49},
+    {n:"Dark soy sauce", q:"1 bottle — Black Pepper Chicken (optional)", price:2.99},
+    {n:"Shaoxing wine (or dry sherry)", q:"1 bottle — Black Pepper Chicken (optional)", price:3.49},
+    {n:"Cornstarch", q:"1 box — Black Pepper Chicken", price:1.29},
+    {n:"Fish sauce", q:"1 bottle — Pad Thai", price:2.99},
+    {n:"Rice vinegar", q:"1 bottle — Pad Thai", price:2.29},
+    {n:"Sriracha", q:"1 bottle — Pad Thai", price:2.99},
+    {n:"Creamy peanut butter", q:"1 jar — Pad Thai (optional)", price:2.49},
+    {n:"Dry roasted peanuts", q:"1 jar — Pad Thai garnish", price:2.49},
+    {n:"Honey", q:"1 bottle — Pork", price:3.49},
+    {n:"Apple cider vinegar", q:"1 bottle — Pork", price:1.99},
+    {n:"Olive oil", q:"1 bottle — multiple", price:4.49}
+  ]},
+  {sec:"🌮 Bread, Tortillas & Mix", items:[
+    {n:"Bread/all-purpose flour", q:"1 bag (5 lb) — Pizza dough, Hamburger Helper roux", staple:"flour", units:1},
+    {n:"Instant yeast", q:"1 packet — Pizza", price:0.99},
+    {n:"Small flour tortillas", q:"1 pack — Chicken Tacos", staple:"tortillas", units:1},
+    {n:"Hamburger buns", q:"1 pack — Burgers", price:1.99},
+    {n:"Taco seasoning", q:"2 packets — Chicken Tacos, Taco Bowls", price:1.00}
+  ]},
+  {sec:"🧂 Spice Rack (likely on hand)", items:[
+    {n:"Spice-rack restock", q:"Smoked paprika, garlic/onion powder, thyme, cumin, cayenne, paprika, brown sugar, red pepper flakes, Italian seasoning — buy what you're out of", price:3.00}
+  ]}
+];
+
+function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_1, groc:GROCERY_1} : {menu:MENU_2, groc:GROCERY_2}; }
+
+/* ============================ DATES / ROTATION ============================ */
+const ANCHOR = new Date(2026,0,4);              // Sunday, Jan 4 2026 — period 0 start
+const DAYMS = 86400000, PERIODMS = 14*DAYMS;
+function startOfDay(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+function addDays(d,n){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n); }
+function fmt(d){ return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+function fmtShort(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+
+const today = startOfDay(new Date());
+let PERIOD = Math.floor((today - ANCHOR)/PERIODMS);
+if(PERIOD < 0) PERIOD = 0;
+const A_START = addDays(ANCHOR, PERIOD*14);
+const B_START = addDays(ANCHOR, (PERIOD+1)*14);
+const B_END   = addDays(ANCHOR, (PERIOD+2)*14 - 1);
+
+// slot context: dataset + storage period key + start date
+const CTX = {
+  A:{...datasetForPeriod(PERIOD),   key:PERIOD,   start:A_START, end:addDays(A_START,13)},
+  B:{...datasetForPeriod(PERIOD+1), key:PERIOD+1, start:B_START, end:B_END}
+};
+
+/* ============================ STORAGE ============================ */
+const LS = { staples:"mp_staples_v2", prices:"mp_prices_v2" };
+const ckChecks = p => "mp_checks_"+p;
+const ckCustom = p => "mp_custom_"+p;
+function load(key,fb){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fb; }catch(e){ return fb; } }
+function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch(e){} }
+let checks = { A:load(ckChecks(CTX.A.key),{}), B:load(ckChecks(CTX.B.key),{}) };
+let custom = { A:load(ckCustom(CTX.A.key),[]),  B:load(ckCustom(CTX.B.key),[]) };
+
+/* ============================ PRICE CATALOG ============================ */
+let CATALOG = []; // [{sec, items:[{n, def}]}] non-staple, deduped across both menus
+function buildCatalog(){
+  const seen=new Set(), secMap=new Map();
+  [GROCERY_1,GROCERY_2].forEach(ds=>ds.forEach(section=>{
+    section.items.forEach(it=>{
+      if(it.staple) return;
+      if(seen.has(it.n)) return;
+      seen.add(it.n);
+      if(!secMap.has(section.sec)) secMap.set(section.sec,[]);
+      secMap.get(section.sec).push({n:it.n, def:it.price||0});
+    });
+  }));
+  CATALOG = Array.from(secMap.entries()).map(([sec,items])=>({sec,items}));
+}
+function initPrices(){
+  const sStaple=load(LS.staples,{}), sPrice=load(LS.prices,{});
+  staplePrices={}; for(const k in STAPLE_DEFAULTS) staplePrices[k]=(sStaple[k]!=null&&!isNaN(sStaple[k]))?sStaple[k]:STAPLE_DEFAULTS[k].price;
+  prices={}; CATALOG.forEach(s=>s.items.forEach(it=>{ prices[it.n]=(sPrice[it.n]!=null&&!isNaN(sPrice[it.n]))?sPrice[it.n]:it.def; }));
+}
+function priceOf(item){
+  if(item.staple) return (staplePrices[item.staple]||0)*item.units;
+  if(item.custom) return item.price||0;
+  return (prices[item.n]!=null)?prices[item.n]:(item.price||0);
+}
+function money(n){ return "$"+(Math.round(n*100)/100).toFixed(2); }
+
+/* ============================ STATUS / OVERVIEW ============================ */
+function renderStatus(){
+  document.getElementById("statusBar").innerHTML =
+    `📅 Today: <b>${fmt(today)}</b>` +
+    ` &nbsp;·&nbsp; You're in <b>Cycle A</b> (${fmtShort(CTX.A.start)}–${fmtShort(CTX.A.end)})` +
+    ` &nbsp;·&nbsp; Next rollover: <b>${fmt(B_START)}</b>`;
+  document.getElementById("ovARange").textContent = `· ${fmtShort(CTX.A.start)} – ${fmtShort(CTX.A.end)} · this cycle`;
+  document.getElementById("ovBRange").textContent = `· ${fmtShort(CTX.B.start)} – ${fmtShort(CTX.B.end)} · up next`;
+  document.getElementById("recARange").textContent = `· ${fmtShort(CTX.A.start)} – ${fmtShort(CTX.A.end)}`;
+  document.getElementById("recBRange").textContent = `· ${fmtShort(CTX.B.start)} – ${fmtShort(CTX.B.end)}`;
+}
+function renderOverview(){
+  const mk=(menu,start)=>menu.map((k,i)=>{
+    const d=addDays(start,i);
+    return `<div class="ov"><div class="d">Day ${i+1} · ${fmtShort(d)}</div><div class="m">${R[k].title}</div></div>`;
+  }).join("");
+  document.getElementById("ovA").innerHTML =
+    `<div class="week-label">Week 1</div>`+mk(CTX.A.menu.slice(0,7),CTX.A.start)+
+    `<div class="week-label">Week 2</div>`+mk(CTX.A.menu.slice(7),addDays(CTX.A.start,7));
+  document.getElementById("ovB").innerHTML =
+    `<div class="week-label">Week 1</div>`+mk(CTX.B.menu.slice(0,7),CTX.B.start)+
+    `<div class="week-label">Week 2</div>`+mk(CTX.B.menu.slice(7),addDays(CTX.B.start,7));
+}
+
+/* ============================ RECIPES ============================ */
+function ingHTML(groups){
+  return groups.map(g=>{
+    const head = g[0] ? `<div class="sub-h">${g[0]}</div>` : "";
+    return head+`<ul class="ing-list">${g.slice(1).map(x=>`<li>${x}</li>`).join("")}</ul>`;
+  }).join("");
+}
+function recipeCard(k,dayNo,date){
+  const r=R[k];
+  const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : r.src;
+  const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
+  return `<article class="recipe">
+    <span class="day-tag">Day ${dayNo} · ${fmt(date)}</span>
+    <h3>${r.title}</h3>
+    <div class="meta">Serves ${r.serves} · Source: ${link}</div>
+    <div class="cols">
+      <div><h4>Ingredients</h4>${ingHTML(r.ing)}</div>
+      <div><h4>Instructions</h4><ol class="steps">${r.steps.map(s=>`<li>${s}</li>`).join("")}</ol>${note}</div>
+    </div></article>`;
+}
+function renderRecipes(){
+  document.getElementById("recipesA").innerHTML = CTX.A.menu.map((k,i)=>recipeCard(k,i+1,addDays(CTX.A.start,i))).join("");
+  document.getElementById("recipesB").innerHTML = CTX.B.menu.map((k,i)=>recipeCard(k,i+1,addDays(CTX.B.start,i))).join("");
+}
+
+/* ============================ GROCERY ============================ */
+function renderGrocery(slot){
+  const groc = CTX[slot].groc;
+  const container = document.getElementById("groceryList"+slot);
+  let html="";
+  groc.forEach((section,si)=>{
+    let subtotal=0;
+    const rows = section.items.map((item,ii)=>{
+      const id=`${si}-${ii}`, p=priceOf(item); subtotal+=p;
+      const ck = checks[slot][id]?"checked":"", li = checks[slot][id]?"checked":"";
+      const flag = item.staple?`<span class="staple-flag">STAPLE</span>`:"";
+      const pc = item.staple?"price staple":"price";
+      return `<li class="${li}" data-id="${id}">
+        <input type="checkbox" ${ck} onchange="toggleCheck('${slot}','${id}',this)">
+        <label><span class="nm">${item.n}${flag}</span><span class="qty">${item.q}</span></label>
+        <span class="${pc}">${money(p)}</span></li>`;
+    }).join("");
+    html+=`<div class="gsection"><h4>${section.sec}<span class="sub">${money(subtotal)}</span></h4><ul class="glist">${rows}</ul></div>`;
+  });
+  // custom items
+  if(custom[slot].length){
+    let csub=0;
+    const rows = custom[slot].map(item=>{
+      const id="c-"+item.id, p=item.price||0; csub+=p;
+      const ck = checks[slot][id]?"checked":"", li = checks[slot][id]?"checked":"";
+      return `<li class="${li}" data-id="${id}">
+        <input type="checkbox" ${ck} onchange="toggleCheck('${slot}','${id}',this)">
+        <label><span class="nm">${item.n}</span><span class="qty">${item.q||"added by you"}</span></label>
+        <input class="cust-price-in" type="number" step="0.01" min="0" value="${(item.price||0).toFixed(2)}"
+          onchange="editCustomPrice('${slot}','${item.id}',this.value)">
+        <button class="remove-x" title="Remove" onclick="removeCustom('${slot}','${item.id}')">✕</button></li>`;
+    }).join("");
+    html+=`<div class="gsection custom"><h4>🛒 Added by You<span class="sub">${money(csub)}</span></h4><ul class="glist">${rows}</ul></div>`;
+  }
+  container.innerHTML=html;
+  updateTotals(slot);
+}
+function updateTotals(slot){
+  const groc=CTX[slot].groc;
+  let total=0, remaining=0, count=0, done=0;
+  groc.forEach((section,si)=>section.items.forEach((item,ii)=>{
+    const id=`${si}-${ii}`, p=priceOf(item); total+=p; count++;
+    if(checks[slot][id]) done++; else remaining+=p;
+  }));
+  custom[slot].forEach(item=>{
+    const id="c-"+item.id, p=item.price||0; total+=p; count++;
+    if(checks[slot][id]) done++; else remaining+=p;
+  });
+  document.getElementById("tot"+slot).textContent=money(total);
+  document.getElementById("rem"+slot).textContent=money(remaining);
+  document.getElementById("cnt"+slot).textContent=`${done} / ${count}`;
+}
+function toggleCheck(slot,id,el){
+  if(el.checked) checks[slot][id]=1; else delete checks[slot][id];
+  save(ckChecks(CTX[slot].key), checks[slot]);
+  const li=el.closest("li"); if(li) li.classList.toggle("checked",el.checked);
+  updateTotals(slot);
+}
+function resetChecks(slot){ checks[slot]={}; save(ckChecks(CTX[slot].key),checks[slot]); renderGrocery(slot); }
+
+let custSeq = Date.parse(A_START) || 1; // deterministic-ish base; bumped per add
+function addCustom(slot){
+  const nm=document.getElementById("aiName"+slot), q=document.getElementById("aiQty"+slot), pr=document.getElementById("aiPrice"+slot);
+  const name=(nm.value||"").trim(); if(!name){ nm.focus(); return; }
+  const price=parseFloat(pr.value);
+  custom[slot].push({ id:String(custSeq++)+Math.floor(performance.now()), n:name, q:(q.value||"").trim(), price:(isNaN(price)||price<0)?0:price, custom:true });
+  save(ckCustom(CTX[slot].key), custom[slot]);
+  nm.value=""; q.value=""; pr.value="";
+  renderGrocery(slot); toast("Item added");
+}
+function editCustomPrice(slot,id,val){
+  const num=parseFloat(val); const it=custom[slot].find(x=>x.id===id); if(!it) return;
+  it.price=(isNaN(num)||num<0)?0:num; save(ckCustom(CTX[slot].key),custom[slot]); renderGrocery(slot); toast("Saved");
+}
+function removeCustom(slot,id){
+  custom[slot]=custom[slot].filter(x=>x.id!==id); delete checks[slot]["c-"+id];
+  save(ckCustom(CTX[slot].key),custom[slot]); save(ckChecks(CTX[slot].key),checks[slot]);
+  renderGrocery(slot);
+}
+
+/* ============================ PRICE EDITOR ============================ */
+function renderStapleRows(){
+  document.getElementById("stapleRows").innerHTML = Object.keys(STAPLE_DEFAULTS).map(k=>{
+    const s=STAPLE_DEFAULTS[k];
+    return `<tr><td>${s.label}</td><td class="unit">${s.per}</td>
+      <td class="price-cell"><span class="price-input"><span>$</span><input type="number" step="0.01" min="0"
+        value="${staplePrices[k].toFixed(2)}" oninput="onStapleChange('${k}',this.value)"></span></td></tr>`;
+  }).join("");
+}
+function renderCatalog(){
+  document.getElementById("priceCatalog").innerHTML = CATALOG.map(s=>{
+    const rows = s.items.map(it=>`<tr><td>${it.n}</td><td class="unit">per item</td>
+      <td class="price-cell"><span class="price-input"><span>$</span><input type="number" step="0.01" min="0"
+        value="${(prices[it.n]!=null?prices[it.n]:it.def).toFixed(2)}" oninput="onPriceChange('${it.n.replace(/'/g,"\\'")}',this.value)"></span></td></tr>`).join("");
+    return `<div class="staple-card"><h3>${s.sec}</h3><table class="staples">
+      <thead><tr><th>Item</th><th>Priced</th><th class="price-cell">Price</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }).join("");
+}
+function onStapleChange(k,val){ const n=parseFloat(val); if(isNaN(n)||n<0)return; staplePrices[k]=n; save(LS.staples,staplePrices); renderGrocery("A"); renderGrocery("B"); toast("Saved"); }
+function onPriceChange(name,val){ const n=parseFloat(val); if(isNaN(n)||n<0)return; prices[name]=n; save(LS.prices,prices); renderGrocery("A"); renderGrocery("B"); toast("Saved"); }
+function resetPrices(){
+  for(const k in STAPLE_DEFAULTS) staplePrices[k]=STAPLE_DEFAULTS[k].price;
+  prices={}; CATALOG.forEach(s=>s.items.forEach(it=>prices[it.n]=it.def));
+  save(LS.staples,staplePrices); save(LS.prices,prices);
+  renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B"); toast("Reset to defaults");
+}
+
+/* ============================ MISC ============================ */
+let toastT;
+function toast(msg){ const p=document.getElementById("savedPop"); p.textContent="✓ "+msg; p.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>p.classList.remove("show"),1100); }
+document.getElementById("tabs").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-t]"); if(!b)return;
+  document.querySelectorAll("#tabs button").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+  document.querySelectorAll("section.panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById(b.dataset.t).classList.add("active");
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+
+/* ============================ INIT ============================ */
+buildCatalog();
+initPrices();
+renderStatus();
+renderOverview();
+renderRecipes();
+renderStapleRows();
+renderCatalog();
+renderGrocery("A");
+renderGrocery("B");
+</script>
+</body>
+</html>
