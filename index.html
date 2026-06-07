@@ -271,6 +271,8 @@
 </div>
 <div class="saved-pop" id="savedPop">✓ Saved</div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
 /* ============================ STAPLES ============================ */
 const STAPLE_DEFAULTS = {
@@ -658,7 +660,7 @@ const LS = { staples:"mp_staples_v3", prices:"mp_prices_v3", store:"mp_store_v3"
 const ckChecks = p => "mp_checks_"+p;
 const ckCustom = p => "mp_custom_"+p;
 function load(key,fb){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fb; }catch(e){ return fb; } }
-function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch(e){} }
+function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch(e){} scheduleSyncPush(); }
 let checks = { A:load(ckChecks(CTX.A.key),{}), B:load(ckChecks(CTX.B.key),{}) };
 let custom = { A:load(ckCustom(CTX.A.key),[]),  B:load(ckCustom(CTX.B.key),[]) };
 
@@ -706,7 +708,8 @@ function renderStatus(){
   document.getElementById("statusBar").innerHTML =
     `📅 Today: <b>${fmt(today)}</b>` +
     ` &nbsp;·&nbsp; You're in <b>Cycle A</b> (${fmtShort(CTX.A.start)}–${fmtShort(CTX.A.end)})` +
-    ` &nbsp;·&nbsp; Next rollover: <b>${fmt(B_START)}</b>`;
+    ` &nbsp;·&nbsp; Next rollover: <b>${fmt(B_START)}</b>` +
+    ` &nbsp;·&nbsp; <span id="syncDot">… connecting</span>`;
   document.getElementById("ovARange").textContent = `· ${fmtShort(CTX.A.start)} – ${fmtShort(CTX.A.end)} · this cycle`;
   document.getElementById("ovBRange").textContent = `· ${fmtShort(CTX.B.start)} – ${fmtShort(CTX.B.end)} · up next`;
   document.getElementById("recARange").textContent = `· ${fmtShort(CTX.A.start)} – ${fmtShort(CTX.A.end)}`;
@@ -902,6 +905,60 @@ document.getElementById("tabs").addEventListener("click",e=>{
   window.scrollTo({top:0,behavior:"smooth"});
 });
 
+/* ============================ FIREBASE SYNC ============================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDSoy-vRlpWZS-RdDMUxsqsiw5HleY_Yus",
+  authDomain: "dinner-meal-plan.firebaseapp.com",
+  databaseURL: "https://dinner-meal-plan-default-rtdb.firebaseio.com",
+  projectId: "dinner-meal-plan",
+  storageBucket: "dinner-meal-plan.firebasestorage.app",
+  messagingSenderId: "397414816682",
+  appId: "1:397414816682:web:0e015377f2f207e64a69d3"
+};
+let syncRef=null, applyingRemote=false, myRev=null, pushTimer=null, seq=0;
+let remoteChecksAll={}, remoteCustomAll={};
+const DEVICE = (function(){ let d=null; try{d=localStorage.getItem('mp_device');}catch(e){} if(!d){ d='d-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); try{localStorage.setItem('mp_device',d);}catch(e){} } return d; })();
+function setSyncStatus(t){ var el=document.getElementById('syncDot'); if(el) el.innerHTML=t; }
+function syncInit(){
+  if(typeof firebase==="undefined"){ setSyncStatus("⚪ offline (local only)"); return; }
+  try{
+    firebase.initializeApp(firebaseConfig);
+    syncRef=firebase.database().ref('mealplan/shared');
+    syncRef.on('value', function(snap){ applyRemote(snap.val()); }, function(err){ console.warn('sync read error',err); setSyncStatus("⚪ local only"); });
+    setSyncStatus("🟢 synced");
+  }catch(e){ console.warn('sync init failed',e); setSyncStatus("⚪ local only"); }
+}
+function applyRemote(data){
+  if(!data || !data.state){ syncPush(); return; }       // empty remote → seed it from local
+  if(data.rev && data.rev===myRev) return;               // ignore our own echo
+  let s; try{ s=JSON.parse(data.state); }catch(e){ return; }
+  applyingRemote=true;
+  try{
+    if(s.staples) staplePrices=s.staples;
+    if(s.prices)  prices=s.prices;
+    if(s.store)   storeSel=s.store;
+    if(s.unit)    unitSel=s.unit;
+    remoteChecksAll = s.checks||{};
+    remoteCustomAll = s.custom||{};
+    checks.A = remoteChecksAll[CTX.A.key]||{};  checks.B = remoteChecksAll[CTX.B.key]||{};
+    custom.A = remoteCustomAll[CTX.A.key]||[];  custom.B = remoteCustomAll[CTX.B.key]||[];
+    save(LS.staples,staplePrices); save(LS.prices,prices); save(LS.store,storeSel); save(LS.unit,unitSel);
+    save(ckChecks(CTX.A.key),checks.A); save(ckChecks(CTX.B.key),checks.B);
+    save(ckCustom(CTX.A.key),custom.A); save(ckCustom(CTX.B.key),custom.B);
+    renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B");
+    setSyncStatus("🟢 synced");
+  } finally { applyingRemote=false; }
+}
+function scheduleSyncPush(){ if(applyingRemote||!syncRef) return; clearTimeout(pushTimer); pushTimer=setTimeout(syncPush,400); }
+function syncPush(){
+  if(!syncRef) return;
+  remoteChecksAll[CTX.A.key]=checks.A; remoteChecksAll[CTX.B.key]=checks.B;
+  remoteCustomAll[CTX.A.key]=custom.A; remoteCustomAll[CTX.B.key]=custom.B;
+  myRev = DEVICE+"-"+(++seq);
+  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll});
+  syncRef.set({rev:myRev, updatedAt:Date.now(), state:state}).catch(function(e){ console.warn('sync push failed',e); });
+}
+
 /* ============================ INIT ============================ */
 buildCatalog();
 initPrices();
@@ -913,6 +970,7 @@ renderCatalog();
 renderAllRecipes();
 renderGrocery("A");
 renderGrocery("B");
+syncInit();
 </script>
 </body>
 </html>
