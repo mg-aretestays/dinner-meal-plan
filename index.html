@@ -132,6 +132,13 @@
   .price-input span{color:var(--muted)}
   .price-input input{border:none;outline:none;width:62px;font-size:.92rem;font-weight:700;font-variant-numeric:tabular-nums;background:transparent;color:var(--ink);text-align:right}
   .price-input:focus-within{border-color:var(--accentA)}
+  .mini-sel{border:1px solid var(--line);border-radius:7px;padding:5px 6px;font-size:.82rem;background:#fff;color:var(--ink);max-width:118px}
+  .quick-compare{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .recipe-index{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+  .ri-card{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;box-shadow:var(--shadow);transition:.15s;font-family:inherit}
+  .ri-card:hover{border-color:var(--accentA);transform:translateY(-1px)}
+  .ri-title{font-weight:700;font-size:1rem;color:var(--ink)}
+  .ri-meta{font-size:.77rem;color:var(--muted)}
   .saved-pop{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
     padding:8px 16px;border-radius:999px;font-size:.82rem;opacity:0;transition:.3s;z-index:50;pointer-events:none}
   .saved-pop.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -158,6 +165,7 @@
     <button data-t="cycleB">Cycle B Recipes</button>
     <button data-t="groceryB">Cycle B Grocery</button>
     <button data-t="prices">Prices</button>
+    <button data-t="recipes">Recipes</button>
   </nav>
 
   <section class="panel active" id="overview">
@@ -228,18 +236,33 @@
 
   <section class="panel" id="prices">
     <h2 class="section-title">Price Editor</h2>
-    <p class="lead">Set the real current price of <strong>every item</strong>. Staples are priced per unit (one change updates every recipe that uses them); everything else is priced per shopping item. All edits save in this browser and flow straight into both cycle totals.</p>
+    <p class="lead">Set the real price of <strong>every item</strong>, per store. Each row has a <strong>Unit</strong> and a <strong>Store</strong> dropdown — pick a store and the price you enter is remembered for that store, so you can compare a whole cycle at Costco vs Kroger vs Aldi vs Publix. The selected store's price feeds the cycle totals. Staples are priced per unit (one change updates every recipe that uses them). All edits save in this browser.</p>
+    <div class="staple-card quick-compare">
+      <strong style="font-size:.92rem">⚡ Quick compare</strong>
+      <span style="font-size:.85rem;color:var(--muted)">set every item to one store →</span>
+      <select class="mini-sel" style="max-width:150px" onchange="setAllStores(this.value)">
+        <option value="" selected disabled>Choose store…</option>
+        <option>Costco</option><option>Kroger</option><option>Aldi</option><option>Publix</option>
+      </select>
+    </div>
     <div class="staple-card">
       <h3>Staple unit prices</h3>
       <p class="sc-note">These drive multiple grocery lines (e.g. chicken price × pounds needed).</p>
-      <table class="staples"><thead><tr><th>Staple</th><th>Priced per</th><th class="price-cell">Price</th></tr></thead>
+      <table class="staples"><thead><tr><th>Staple</th><th>Unit</th><th>Store</th><th class="price-cell">Price</th></tr></thead>
         <tbody id="stapleRows"></tbody></table>
     </div>
     <div id="priceCatalog"></div>
     <div style="display:flex;justify-content:flex-end;margin-top:14px">
       <button class="btn-reset" onclick="resetPrices()">Reset all prices to defaults</button>
     </div>
-    <div class="tip">Defaults reflect typical Kroger budget pricing as of mid-2026.</div>
+    <div class="tip">Defaults reflect typical Kroger budget pricing as of mid-2026 (applied to every store until you change them).</div>
+  </section>
+
+  <section class="panel" id="recipes">
+    <h2 class="section-title">All Recipes</h2>
+    <p class="lead">Every recipe in the rotation. Tap a title to open its full ingredients and instructions.</p>
+    <div id="recipeIndex"></div>
+    <div id="recipeDetail" style="display:none"></div>
   </section>
 
   <footer>
@@ -263,8 +286,24 @@ const STAPLE_DEFAULTS = {
   flour:         {label:"All-purpose / bread flour",           per:"per 5 lb bag",price:2.49},
   tortillas:     {label:"Tortillas (flour)",                   per:"per pack",    price:2.50}
 };
-let staplePrices = {};
-let prices = {}; // name -> price (non-staple items)
+const STORES = ["Costco","Kroger","Aldi","Publix"];
+const UNIT_OPTIONS = ["lb","oz","gallon","dozen","8 oz","pack","item"];
+const DEFAULT_STORE = "Kroger";
+function unitFromPer(per){
+  if(!per) return "item";
+  var p = per.toLowerCase();
+  if(p.indexOf("gallon")>=0) return "gallon";
+  if(p.indexOf("dozen")>=0) return "dozen";
+  if(p.indexOf("8 oz")>=0) return "8 oz";
+  if(/\blb\b/.test(p)) return "lb";
+  if(p.indexOf("pack")>=0||p.indexOf("box")>=0||p.indexOf("bag")>=0) return "pack";
+  if(p.indexOf("oz")>=0) return "oz";
+  return "item";
+}
+let staplePrices = {}; // key  -> {store: price}
+let prices = {};       // name -> {store: price}
+let storeSel = {};     // key/name -> selected store
+let unitSel = {};      // key/name -> selected unit label
 
 /* ============================ RECIPES ============================ */
 const R = {
@@ -615,7 +654,7 @@ const CTX = {
 };
 
 /* ============================ STORAGE ============================ */
-const LS = { staples:"mp_staples_v2", prices:"mp_prices_v2" };
+const LS = { staples:"mp_staples_v3", prices:"mp_prices_v3", store:"mp_store_v3", unit:"mp_unit_v3" };
 const ckChecks = p => "mp_checks_"+p;
 const ckCustom = p => "mp_custom_"+p;
 function load(key,fb){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fb; }catch(e){ return fb; } }
@@ -639,14 +678,26 @@ function buildCatalog(){
   CATALOG = Array.from(secMap.entries()).map(([sec,items])=>({sec,items}));
 }
 function initPrices(){
-  const sStaple=load(LS.staples,{}), sPrice=load(LS.prices,{});
-  staplePrices={}; for(const k in STAPLE_DEFAULTS) staplePrices[k]=(sStaple[k]!=null&&!isNaN(sStaple[k]))?sStaple[k]:STAPLE_DEFAULTS[k].price;
-  prices={}; CATALOG.forEach(s=>s.items.forEach(it=>{ prices[it.n]=(sPrice[it.n]!=null&&!isNaN(sPrice[it.n]))?sPrice[it.n]:it.def; }));
+  const sStaple=load(LS.staples,{}), sPrice=load(LS.prices,{}), sStore=load(LS.store,{}), sUnit=load(LS.unit,{});
+  staplePrices={}; prices={}; storeSel={}; unitSel={};
+  for(const k in STAPLE_DEFAULTS){
+    const def=STAPLE_DEFAULTS[k].price, obj=sStaple[k]||{};
+    staplePrices[k]={}; STORES.forEach(st=> staplePrices[k][st]=(obj[st]!=null&&!isNaN(obj[st]))?obj[st]:def );
+    storeSel[k]= STORES.indexOf(sStore[k])>=0?sStore[k]:DEFAULT_STORE;
+    unitSel[k]= UNIT_OPTIONS.indexOf(sUnit[k])>=0?sUnit[k]:unitFromPer(STAPLE_DEFAULTS[k].per);
+  }
+  CATALOG.forEach(s=>s.items.forEach(it=>{
+    const def=it.def, obj=sPrice[it.n]||{};
+    prices[it.n]={}; STORES.forEach(st=> prices[it.n][st]=(obj[st]!=null&&!isNaN(obj[st]))?obj[st]:def );
+    storeSel[it.n]= STORES.indexOf(sStore[it.n])>=0?sStore[it.n]:DEFAULT_STORE;
+    unitSel[it.n]= UNIT_OPTIONS.indexOf(sUnit[it.n])>=0?sUnit[it.n]:"item";
+  }));
 }
+function storeOf(item){ return item.staple ? storeSel[item.staple] : storeSel[item.n]; }
 function priceOf(item){
-  if(item.staple) return (staplePrices[item.staple]||0)*item.units;
   if(item.custom) return item.price||0;
-  return (prices[item.n]!=null)?prices[item.n]:(item.price||0);
+  if(item.staple){ const sp=staplePrices[item.staple], st=storeSel[item.staple]||DEFAULT_STORE; return ((sp&&sp[st])||0)*item.units; }
+  const pp=prices[item.n], st=storeSel[item.n]||DEFAULT_STORE; return (pp&&pp[st]!=null)?pp[st]:(item.price||0);
 }
 function money(n){ return "$"+(Math.round(n*100)/100).toFixed(2); }
 
@@ -711,9 +762,10 @@ function renderGrocery(slot){
       const ck = checks[slot][id]?"checked":"", li = checks[slot][id]?"checked":"";
       const flag = item.staple?`<span class="staple-flag">STAPLE</span>`:"";
       const pc = item.staple?"price staple":"price";
+      const st = storeOf(item); const stLabel = st?` · 🏬 ${st}`:"";
       return `<li class="${li}" data-id="${id}">
         <input type="checkbox" ${ck} onchange="toggleCheck('${slot}','${id}',this)">
-        <label><span class="nm">${item.n}${flag}</span><span class="qty">${item.q}</span></label>
+        <label><span class="nm">${item.n}${flag}</span><span class="qty">${item.q}${stLabel}</span></label>
         <span class="${pc}">${money(p)}</span></li>`;
     }).join("");
     html+=`<div class="gsection"><h4>${section.sec}<span class="sub">${money(subtotal)}</span></h4><ul class="glist">${rows}</ul></div>`;
@@ -780,30 +832,63 @@ function removeCustom(slot,id){
 }
 
 /* ============================ PRICE EDITOR ============================ */
+function esc(k){ return String(k).replace(/'/g,"\\'"); }
+function unitDropdown(key){ return `<select class="mini-sel" onchange="onUnitChange('${esc(key)}',this.value)">`+UNIT_OPTIONS.map(u=>`<option ${unitSel[key]===u?'selected':''}>${u}</option>`).join("")+`</select>`; }
+function storeDropdown(key){ return `<select class="mini-sel" onchange="onStoreChange('${esc(key)}',this.value)">`+STORES.map(s=>`<option ${storeSel[key]===s?'selected':''}>${s}</option>`).join("")+`</select>`; }
 function renderStapleRows(){
   document.getElementById("stapleRows").innerHTML = Object.keys(STAPLE_DEFAULTS).map(k=>{
-    const s=STAPLE_DEFAULTS[k];
-    return `<tr><td>${s.label}</td><td class="unit">${s.per}</td>
+    const s=STAPLE_DEFAULTS[k], val=staplePrices[k][storeSel[k]];
+    return `<tr><td>${s.label}</td><td>${unitDropdown(k)}</td><td>${storeDropdown(k)}</td>
       <td class="price-cell"><span class="price-input"><span>$</span><input type="number" step="0.01" min="0"
-        value="${staplePrices[k].toFixed(2)}" oninput="onStapleChange('${k}',this.value)"></span></td></tr>`;
+        value="${val.toFixed(2)}" oninput="onStapleChange('${k}',this.value)"></span></td></tr>`;
   }).join("");
 }
 function renderCatalog(){
   document.getElementById("priceCatalog").innerHTML = CATALOG.map(s=>{
-    const rows = s.items.map(it=>`<tr><td>${it.n}</td><td class="unit">per item</td>
+    const rows = s.items.map(it=>{ const val=prices[it.n][storeSel[it.n]];
+      return `<tr><td>${it.n}</td><td>${unitDropdown(it.n)}</td><td>${storeDropdown(it.n)}</td>
       <td class="price-cell"><span class="price-input"><span>$</span><input type="number" step="0.01" min="0"
-        value="${(prices[it.n]!=null?prices[it.n]:it.def).toFixed(2)}" oninput="onPriceChange('${it.n.replace(/'/g,"\\'")}',this.value)"></span></td></tr>`).join("");
+        value="${val.toFixed(2)}" oninput="onPriceChange('${esc(it.n)}',this.value)"></span></td></tr>`; }).join("");
     return `<div class="staple-card"><h3>${s.sec}</h3><table class="staples">
-      <thead><tr><th>Item</th><th>Priced</th><th class="price-cell">Price</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      <thead><tr><th>Item</th><th>Unit</th><th>Store</th><th class="price-cell">Price</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }).join("");
 }
-function onStapleChange(k,val){ const n=parseFloat(val); if(isNaN(n)||n<0)return; staplePrices[k]=n; save(LS.staples,staplePrices); renderGrocery("A"); renderGrocery("B"); toast("Saved"); }
-function onPriceChange(name,val){ const n=parseFloat(val); if(isNaN(n)||n<0)return; prices[name]=n; save(LS.prices,prices); renderGrocery("A"); renderGrocery("B"); toast("Saved"); }
+function onStapleChange(k,val){ const n=parseFloat(val); if(isNaN(n)||n<0)return; staplePrices[k][storeSel[k]]=n; save(LS.staples,staplePrices); renderGrocery("A"); renderGrocery("B"); toast("Saved"); }
+function onPriceChange(name,val){ const n=parseFloat(val); if(isNaN(n)||n<0)return; prices[name][storeSel[name]]=n; save(LS.prices,prices); renderGrocery("A"); renderGrocery("B"); toast("Saved"); }
+function onStoreChange(key,val){ if(STORES.indexOf(val)<0)return; storeSel[key]=val; save(LS.store,storeSel); renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B"); toast(val+" selected"); }
+function onUnitChange(key,val){ if(UNIT_OPTIONS.indexOf(val)<0)return; unitSel[key]=val; save(LS.unit,unitSel); toast("Unit: "+val); }
+function setAllStores(val){ if(STORES.indexOf(val)<0)return; for(const k in storeSel) storeSel[k]=val; save(LS.store,storeSel); renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B"); toast("All items → "+val); }
 function resetPrices(){
-  for(const k in STAPLE_DEFAULTS) staplePrices[k]=STAPLE_DEFAULTS[k].price;
-  prices={}; CATALOG.forEach(s=>s.items.forEach(it=>prices[it.n]=it.def));
-  save(LS.staples,staplePrices); save(LS.prices,prices);
+  [LS.staples,LS.prices,LS.store,LS.unit].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} });
+  initPrices();
   renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B"); toast("Reset to defaults");
+}
+const ALL_RECIPE_KEYS = Object.keys(R).slice().sort((a,b)=>R[a].title.localeCompare(R[b].title));
+function renderAllRecipes(){
+  document.getElementById("recipeIndex").innerHTML =
+    `<div class="recipe-index">`+ALL_RECIPE_KEYS.map(k=>
+      `<button class="ri-card" onclick="showRecipeDetail('${k}')"><span class="ri-title">${R[k].title}</span><span class="ri-meta">Serves ${R[k].serves} · ${R[k].src}</span></button>`
+    ).join("")+`</div>`;
+}
+function showRecipeDetail(k){
+  const r=R[k];
+  const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : r.src;
+  const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
+  document.getElementById("recipeDetail").innerHTML =
+    `<button class="btn-reset" style="margin-bottom:12px" onclick="hideRecipeDetail()">← All recipes</button>
+     <article class="recipe">
+       <h3>${r.title}</h3>
+       <div class="meta">Serves ${r.serves} · Source: ${link}</div>
+       <div class="cols"><div><h4>Ingredients</h4>${ingHTML(r.ing)}</div>
+       <div><h4>Instructions</h4><ol class="steps">${r.steps.map(s=>`<li>${s}</li>`).join("")}</ol>${note}</div></div>
+     </article>`;
+  document.getElementById("recipeIndex").style.display="none";
+  document.getElementById("recipeDetail").style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function hideRecipeDetail(){
+  document.getElementById("recipeDetail").style.display="none";
+  document.getElementById("recipeIndex").style.display="block";
 }
 
 /* ============================ MISC ============================ */
@@ -825,6 +910,7 @@ renderOverview();
 renderRecipes();
 renderStapleRows();
 renderCatalog();
+renderAllRecipes();
 renderGrocery("A");
 renderGrocery("B");
 </script>
