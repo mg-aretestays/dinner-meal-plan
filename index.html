@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2f6f4f">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Meal Plan">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>Rotating Dinner Meal Plan</title>
 <style>
   :root{
@@ -145,11 +152,21 @@
 
   footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:36px;padding-top:18px;border-top:1px solid var(--line)}
   .tip{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:12px 16px;font-size:.85rem;color:var(--muted);margin:10px 0}
-  @media print{nav.tabs,.btn-reset,.additem,.remove-x{display:none}section.panel{display:block!important}}
+  .install-banner{display:none;align-items:center;gap:10px;background:var(--accentA);color:#fff;border-radius:12px;padding:11px 14px;margin:10px 0 0;font-size:.9rem;box-shadow:var(--shadow)}
+  .install-banner button{border:none;border-radius:8px;padding:8px 13px;font-weight:700;cursor:pointer;font-size:.85rem;flex:none}
+  .install-banner #installBtn{background:#fff;color:var(--accentA)}
+  .install-banner #installClose{background:rgba(255,255,255,.22);color:#fff;margin-left:auto}
+  @media print{nav.tabs,.btn-reset,.additem,.remove-x,.install-banner{display:none}section.panel{display:block!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
+
+  <div id="installBanner" class="install-banner">
+    <span id="installText"></span>
+    <button id="installBtn" style="display:none">Install</button>
+    <button id="installClose" aria-label="Dismiss">✕</button>
+  </div>
 
   <header class="hero">
     <div class="kicker">Rotating Dinner Plan</div>
@@ -455,12 +472,20 @@ const R = {
     steps:["Set the Instant Pot to sauté. Add the bacon and cook until crisp, about 5 minutes. Remove the bacon. If there's excess grease, drain all but 1 Tbsp. Add the chicken sausage and onions and brown all over, 5–8 minutes. Add the garlic, celery, and potatoes and cook 2 minutes. Turn the Instant Pot off.",
       "Add the broth, pesto, lemon juice, red pepper flakes, and season with salt and pepper. Cover and cook on high pressure 8 minutes.",
       "Use natural or quick release. Set to sauté and stir in the kale, cream, and Parmesan. Cook until the kale is wilted, about 10 minutes. Turn off and stir in the reserved bacon.",
-      "Serve topped with additional Parmesan and fresh thyme, if desired."]}
+      "Serve topped with additional Parmesan and fresh thyme, if desired."]},
+  porkloin:{title:"Best Damn Oven-Roasted Pork Loin", serves:"4–6", src:"recipeteacher.com", url:"https://recipeteacher.com/best-damn-oven-roasted-pork-loin/",
+    ing:[["","Pork loin roast, 2-3 lbs, boneless","1 Tbsp kosher salt","1 Tbsp Worcestershire sauce","1 tsp paprika","1 tsp onion powder","1 tsp garlic powder","1 tsp rosemary, dried and crushed","1 tsp black pepper, ground"]],
+    steps:["Preheat oven to 425°F. Line a sheet pan with aluminum foil, spray with a little non-stick cooking spray, and set aside.",
+      "Mix all dry ingredients in a small bowl and set aside.",
+      "Trim any excess fat from the top of the pork loin roast. Place the roast on a large plate and coat with Worcestershire sauce, then with the dry seasonings. Rub liberally on all sides.",
+      "Place the seasoned pork roast fat-side-up on the foil-lined sheet pan and roast at 425°F for 15 minutes.",
+      "After 15 minutes, reduce heat to 375°F and continue roasting about 45 minutes, or until the internal temperature at the center reaches 145°F.",
+      "Remove from the oven and tent loosely with foil for 5–10 minutes before serving."]}
 };
 
 /* ============================ MENUS (rotate by period parity) ============================ */
 const MENU_1 = ["bpc","spaghetti","snackwraps","mac","crunchwraps","garlicbroccoli","pizza","pork","tacos","thainoodles","alfredo","burgers","stirfry","breakfast"];
-const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","pork"];
+const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","porkloin"];
 
 /* ============================ GROCERY (one per menu) ============================ */
 const GROCERY_1 = [
@@ -550,7 +575,7 @@ const GROCERY_2 = [
     {n:"Frozen popcorn chicken / nuggets", q:"1 bag (≥10 oz) — KFC Bowls", price:5.99},
     {n:"Frozen meatballs", q:"1 bag — Spaghetti", price:5.49},
     {n:"Ground beef", q:"3 lb — Burgers, Hamburger Helper, Taco Bowls", staple:"ground_beef", units:3},
-    {n:"Pork tenderloin", q:"2 lb (≈2 tenderloins) — Pork", staple:"pork_tenderloin", units:2},
+    {n:"Pork loin roast (boneless)", q:"~2.5 lb (2-3 lb roast) — Oven-Roasted Pork Loin", price:7.49},
     {n:"Ground spicy Italian chicken sausage", q:"3/4 lb — Zuppa Toscana", price:3.99},
     {n:"Bacon", q:"1 pack — Zuppa Toscana", staple:"bacon", units:1},
     {n:"Pepperoni", q:"1 pkg — Pizza", price:3.49}
@@ -616,8 +641,7 @@ const GROCERY_2 = [
     {n:"Sriracha", q:"1 bottle — Pad Thai", price:2.99},
     {n:"Creamy peanut butter", q:"1 jar — Pad Thai (optional)", price:2.49},
     {n:"Dry roasted peanuts", q:"1 jar — Pad Thai garnish", price:2.49},
-    {n:"Honey", q:"1 bottle — Pork", price:3.49},
-    {n:"Apple cider vinegar", q:"1 bottle — Pork", price:1.99},
+    {n:"Worcestershire sauce", q:"1 bottle — Oven-Roasted Pork Loin", price:2.99},
     {n:"Olive oil", q:"1 bottle — multiple", price:4.49}
   ]},
   {sec:"🌮 Bread, Tortillas & Mix", items:[
@@ -628,11 +652,11 @@ const GROCERY_2 = [
     {n:"Taco seasoning", q:"2 packets — Chicken Tacos, Taco Bowls", price:1.00}
   ]},
   {sec:"🧂 Spice Rack (likely on hand)", items:[
-    {n:"Spice-rack restock", q:"Smoked paprika, garlic/onion powder, thyme, cumin, cayenne, paprika, brown sugar, red pepper flakes, Italian seasoning — buy what you're out of", price:3.00}
+    {n:"Spice-rack restock", q:"Smoked paprika, garlic/onion powder, thyme, rosemary, kosher salt, cumin, cayenne, paprika, brown sugar, red pepper flakes, Italian seasoning — buy what you're out of", price:3.00}
   ]}
 ];
 
-function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_1, groc:GROCERY_1} : {menu:MENU_2, groc:GROCERY_2}; }
+function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_2, groc:GROCERY_2} : {menu:MENU_1, groc:GROCERY_1}; }
 
 /* ============================ DATES / ROTATION ============================ */
 const ANCHOR = new Date(2026,0,4);              // Sunday, Jan 4 2026 — period 0 start
@@ -760,25 +784,28 @@ function renderGrocery(slot){
   let html="";
   groc.forEach((section,si)=>{
     let subtotal=0;
-    const rows = section.items.map((item,ii)=>{
-      const id=`${si}-${ii}`, p=priceOf(item); subtotal+=p;
-      const ck = checks[slot][id]?"checked":"", li = checks[slot][id]?"checked":"";
-      const flag = item.staple?`<span class="staple-flag">STAPLE</span>`:"";
-      const pc = item.staple?"price staple":"price";
-      const st = storeOf(item); const stLabel = st?` · 🏬 ${st}`:"";
-      return `<li class="${li}" data-id="${id}">
-        <input type="checkbox" ${ck} onchange="toggleCheck('${slot}','${id}',this)">
-        <label><span class="nm">${item.n}${flag}</span><span class="qty">${item.q}${stLabel}</span></label>
-        <span class="${pc}">${money(p)}</span></li>`;
+    const entries = section.items.map((item,ii)=>{ const id=`${si}-${ii}`, p=priceOf(item); subtotal+=p; return {item,id,p,checked:!!checks[slot][id]}; });
+    entries.sort((a,b)=>(a.checked?1:0)-(b.checked?1:0));   // unchecked rise, checked sink
+    const rows = entries.map(function(e){
+      const ck = e.checked?"checked":"", li = e.checked?"checked":"";
+      const flag = e.item.staple?`<span class="staple-flag">STAPLE</span>`:"";
+      const pc = e.item.staple?"price staple":"price";
+      const st = storeOf(e.item); const stLabel = st?` · 🏬 ${st}`:"";
+      return `<li class="${li}" data-id="${e.id}">
+        <input type="checkbox" ${ck} onchange="toggleCheck('${slot}','${e.id}',this)">
+        <label><span class="nm">${e.item.n}${flag}</span><span class="qty">${e.item.q}${stLabel}</span></label>
+        <span class="${pc}">${money(e.p)}</span></li>`;
     }).join("");
     html+=`<div class="gsection"><h4>${section.sec}<span class="sub">${money(subtotal)}</span></h4><ul class="glist">${rows}</ul></div>`;
   });
   // custom items
   if(custom[slot].length){
     let csub=0;
-    const rows = custom[slot].map(item=>{
-      const id="c-"+item.id, p=item.price||0; csub+=p;
-      const ck = checks[slot][id]?"checked":"", li = checks[slot][id]?"checked":"";
+    const centries = custom[slot].map(item=>{ const id="c-"+item.id, p=item.price||0; csub+=p; return {item,id,checked:!!checks[slot][id]}; });
+    centries.sort((a,b)=>(a.checked?1:0)-(b.checked?1:0));
+    const rows = centries.map(function(e){
+      const item=e.item, id=e.id;
+      const ck = e.checked?"checked":"", li = e.checked?"checked":"";
       return `<li class="${li}" data-id="${id}">
         <input type="checkbox" ${ck} onchange="toggleCheck('${slot}','${id}',this)">
         <label><span class="nm">${item.n}</span><span class="qty">${item.q||"added by you"}</span></label>
@@ -809,8 +836,7 @@ function updateTotals(slot){
 function toggleCheck(slot,id,el){
   if(el.checked) checks[slot][id]=1; else delete checks[slot][id];
   save(ckChecks(CTX[slot].key), checks[slot]);
-  const li=el.closest("li"); if(li) li.classList.toggle("checked",el.checked);
-  updateTotals(slot);
+  renderGrocery(slot);   // re-render so checked items sink to the bottom
 }
 function resetChecks(slot){ checks[slot]={}; save(ckChecks(CTX[slot].key),checks[slot]); renderGrocery(slot); }
 
@@ -971,6 +997,33 @@ renderAllRecipes();
 renderGrocery("A");
 renderGrocery("B");
 syncInit();
+
+/* ============================ ADD TO HOME SCREEN ============================ */
+(function(){
+  var banner=document.getElementById('installBanner'), txt=document.getElementById('installText'),
+      btn=document.getElementById('installBtn'), close=document.getElementById('installClose');
+  if(!banner) return;
+  try{ if(localStorage.getItem('mp_install_dismissed')) return; }catch(e){}
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true;
+  if(standalone) return;                       // already installed → no banner
+  var ua = navigator.userAgent||"";
+  var isIOS = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+  var deferred=null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault(); deferred=e;
+    txt.innerHTML="📲 Add this meal plan to your home screen";
+    btn.style.display='inline-block'; banner.style.display='flex';
+  });
+  window.addEventListener('appinstalled', function(){ banner.style.display='none'; try{localStorage.setItem('mp_install_dismissed','1');}catch(e){} });
+  btn.addEventListener('click', function(){
+    if(deferred){ deferred.prompt(); deferred.userChoice.finally(function(){ deferred=null; banner.style.display='none'; }); }
+  });
+  close.addEventListener('click', function(){ banner.style.display='none'; try{localStorage.setItem('mp_install_dismissed','1');}catch(e){} });
+  if(isIOS){
+    txt.innerHTML="📲 Add to your Home Screen: tap the <b>Share</b> button, then <b>Add to Home Screen</b>";
+    banner.style.display='flex';   // iOS has no install event — show instructions
+  }
+})();
 </script>
 </body>
 </html>
