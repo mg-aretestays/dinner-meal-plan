@@ -484,8 +484,8 @@ const R = {
 };
 
 /* ============================ MENUS (rotate by period parity) ============================ */
-const MENU_1 = ["bpc","spaghetti","snackwraps","mac","crunchwraps","garlicbroccoli","pizza","pork","tacos","thainoodles","alfredo","burgers","stirfry","breakfast"];
-const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","porkloin"];
+const MENU_1 = ["bpc","spaghetti","snackwraps","mac","crunchwraps","garlicbroccoli","pizza","porkloin","tacos","thainoodles","alfredo","burgers","stirfry","breakfast"];
+const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","pork"];
 
 /* ============================ GROCERY (one per menu) ============================ */
 const GROCERY_1 = [
@@ -494,7 +494,7 @@ const GROCERY_1 = [
     {n:"Breaded chicken strips (frozen)", q:"1 box — Snack Wraps", price:5.99},
     {n:"Frozen meatballs", q:"1 bag — Spaghetti", price:5.49},
     {n:"Ground beef (80/20)", q:"2 lb — Crunch Wraps, Burgers", staple:"ground_beef", units:2},
-    {n:"Pork tenderloin", q:"2 lb (≈2 tenderloins) — Pork", staple:"pork_tenderloin", units:2},
+    {n:"Pork loin roast (boneless)", q:"~2.5 lb (2-3 lb roast) — Oven-Roasted Pork Loin", price:7.49},
     {n:"Pepperoni", q:"1 pkg — Pizza", price:3.49},
     {n:"Bacon", q:"1 lb — Breakfast", staple:"bacon", units:1},
     {n:"Breakfast sausage", q:"1 lb — Breakfast", price:3.99}
@@ -546,8 +546,8 @@ const GROCERY_1 = [
     {n:"Sriracha", q:"1 bottle — Thai garnish", price:2.99},
     {n:"Dry roasted peanuts", q:"1 jar — Thai garnish", price:2.49},
     {n:"Sesame seeds", q:"1 jar — Thai, Stir Fry", price:2.00},
-    {n:"Honey", q:"1 bottle — Pork", price:3.49},
-    {n:"Apple cider vinegar", q:"1 bottle — Pork", price:1.99},
+    {n:"Honey", q:"1 bottle — Spicy Thai Noodles", price:3.49},
+    {n:"Worcestershire sauce", q:"1 bottle — Oven-Roasted Pork Loin", price:2.99},
     {n:"Chicken broth", q:"1 carton — Black Pepper Chicken", price:1.49},
     {n:"Vegetable/peanut oil", q:"1 bottle — Black Pepper Chicken, Thai", price:2.99},
     {n:"Olive oil", q:"1 bottle — multiple", price:4.49},
@@ -566,7 +566,7 @@ const GROCERY_1 = [
     {n:"Taco seasoning", q:"2 packets — Crunch Wraps, Chicken Tacos", price:1.00}
   ]},
   {sec:"🧂 Spice Rack (likely on hand)", items:[
-    {n:"Spice-rack restock", q:"Black pepper, salt, paprika, garlic/onion powder, thyme, cumin, cayenne, brown & white sugar, Italian seasoning, red pepper flakes — buy what you're out of", price:3.00}
+    {n:"Spice-rack restock", q:"Black pepper, salt, paprika, garlic/onion powder, thyme, rosemary, cumin, cayenne, brown & white sugar, Italian seasoning, red pepper flakes — buy what you're out of", price:3.00}
   ]}
 ];
 const GROCERY_2 = [
@@ -575,7 +575,7 @@ const GROCERY_2 = [
     {n:"Frozen popcorn chicken / nuggets", q:"1 bag (≥10 oz) — KFC Bowls", price:5.99},
     {n:"Frozen meatballs", q:"1 bag — Spaghetti", price:5.49},
     {n:"Ground beef", q:"3 lb — Burgers, Hamburger Helper, Taco Bowls", staple:"ground_beef", units:3},
-    {n:"Pork loin roast (boneless)", q:"~2.5 lb (2-3 lb roast) — Oven-Roasted Pork Loin", price:7.49},
+    {n:"Pork tenderloin", q:"2 lb (≈2 tenderloins) — Pork Tenderloin", staple:"pork_tenderloin", units:2},
     {n:"Ground spicy Italian chicken sausage", q:"3/4 lb — Zuppa Toscana", price:3.99},
     {n:"Bacon", q:"1 pack — Zuppa Toscana", staple:"bacon", units:1},
     {n:"Pepperoni", q:"1 pkg — Pizza", price:3.49}
@@ -641,7 +641,8 @@ const GROCERY_2 = [
     {n:"Sriracha", q:"1 bottle — Pad Thai", price:2.99},
     {n:"Creamy peanut butter", q:"1 jar — Pad Thai (optional)", price:2.49},
     {n:"Dry roasted peanuts", q:"1 jar — Pad Thai garnish", price:2.49},
-    {n:"Worcestershire sauce", q:"1 bottle — Oven-Roasted Pork Loin", price:2.99},
+    {n:"Honey", q:"1 bottle — Pork Tenderloin", price:3.49},
+    {n:"Apple cider vinegar", q:"1 bottle — Pork Tenderloin", price:1.99},
     {n:"Olive oil", q:"1 bottle — multiple", price:4.49}
   ]},
   {sec:"🌮 Bread, Tortillas & Mix", items:[
@@ -652,11 +653,11 @@ const GROCERY_2 = [
     {n:"Taco seasoning", q:"2 packets — Chicken Tacos, Taco Bowls", price:1.00}
   ]},
   {sec:"🧂 Spice Rack (likely on hand)", items:[
-    {n:"Spice-rack restock", q:"Smoked paprika, garlic/onion powder, thyme, rosemary, kosher salt, cumin, cayenne, paprika, brown sugar, red pepper flakes, Italian seasoning — buy what you're out of", price:3.00}
+    {n:"Spice-rack restock", q:"Smoked paprika, garlic/onion powder, thyme, cumin, cayenne, paprika, brown sugar, red pepper flakes, Italian seasoning — buy what you're out of", price:3.00}
   ]}
 ];
 
-function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_2, groc:GROCERY_2} : {menu:MENU_1, groc:GROCERY_1}; }
+function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_1, groc:GROCERY_1} : {menu:MENU_2, groc:GROCERY_2}; }
 
 /* ============================ DATES / ROTATION ============================ */
 const ANCHOR = new Date(2026,0,4);              // Sunday, Jan 4 2026 — period 0 start
