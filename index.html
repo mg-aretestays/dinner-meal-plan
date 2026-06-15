@@ -57,7 +57,10 @@
   .lead{color:var(--muted);margin:.2em 0 16px;font-size:.95rem}
 
   .overview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0 8px}
-  .ov{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;box-shadow:var(--shadow)}
+  .ov{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+  .ov:hover{border-color:var(--accentA);transform:translateY(-1px)}
+  .ov .open-hint{font-size:.66rem;color:var(--accentA);margin-top:4px;opacity:.85}
+  .cycleB .ov .open-hint{color:var(--accentB)}
   .ov .d{font-size:.68rem;font-weight:700;color:var(--accentA);letter-spacing:.05em;text-transform:uppercase}
   .cycleB .ov .d{color:var(--accentB)}
   .ov .m{font-weight:600;margin-top:3px;font-size:.92rem;line-height:1.25}
@@ -338,7 +341,8 @@ const R = {
       "Stir the sauce until the cornstarch is fully dissolved, pour into the skillet, and stir immediately until it thickens enough to coat a spoon. Add the chicken back and toss to coat. Turn off heat and transfer everything to a plate so it stops cooking.",
       "Serve hot over rice."]},
   tacos:{title:"Slow-Cooker Shredded Chicken Tacos", serves:"6", src:"slowcookermeals.com", url:"https://slowcookermeals.com/slow-cooker-shredded-chicken-tacos/",
-    ing:[["","2 lbs boneless, skinless chicken breasts (about 4 medium)","1 (16 oz) jar of your favorite salsa","1 (1.5 oz) packet taco seasoning","1 tsp black pepper","1 (4 oz) can diced green chilies","Tortillas + toppings, to serve"]],
+    ing:[["","2 lbs boneless, skinless chicken breasts (about 4 medium)","1 (16 oz) jar of your favorite salsa","1 (1.5 oz) packet taco seasoning","1 tsp black pepper","1 (4 oz) can diced green chilies","Tortillas, to serve"],
+      ["Toppings","Cilantro","Diced tomatoes","Monterey Jack & cheddar cheese","Kroger queso","Red onion"]],
     steps:["Place chicken breasts in the slow cooker. Cover with salsa and sprinkle taco seasoning, black pepper, and green chilies over the top.",
       "Cover and cook on low 7–8 hours or high 2½–3 hours. When done, shred the chicken with two forks and stir into the sauce.",
       "Serve on tortillas with your favorite toppings."]},
@@ -501,6 +505,7 @@ const GROCERY_1 = [
   ]},
   {sec:"🥦 Produce", items:[
     {n:"Yellow/white onions", q:"2 — Black Pepper Chicken & others", price:1.00},
+    {n:"Red onion", q:"1 — Chicken Tacos toppings", price:0.79},
     {n:"Bell peppers (2)", q:"2 — Black Pepper Chicken", price:2.00},
     {n:"Broccoli florets", q:"~1 lb / 2 crowns — Spicy Garlic, Stir Fry", price:2.50},
     {n:"Garlic (2 heads)", q:"2 heads — multiple recipes", price:1.00},
@@ -582,6 +587,7 @@ const GROCERY_2 = [
   ]},
   {sec:"🥦 Produce", items:[
     {n:"Yellow onions", q:"3 — Black Pepper Chicken, Hamburger Helper, Zuppa", price:1.50},
+    {n:"Red onion", q:"1 — Chicken Tacos toppings", price:0.79},
     {n:"Bell peppers (3)", q:"3 (incl. 1 red) — Black Pepper Chicken, Pad Thai", price:3.00},
     {n:"Garlic (3 heads)", q:"3 heads — Pork, Roasted Garlic Pasta, Zuppa, others", price:1.50},
     {n:"Fresh ginger", q:"1 knob — Black Pepper Chicken", price:0.79},
@@ -623,6 +629,7 @@ const GROCERY_2 = [
     {n:"Salsa", q:"1 jar (16 oz) — Chicken Tacos", price:1.99},
     {n:"Diced green chilies", q:"1 can (4 oz) — Chicken Tacos", price:0.99},
     {n:"Black beans", q:"1 can (15 oz) — Taco Bowls", price:0.99},
+    {n:"Kroger queso dip", q:"1 jar — Chicken Tacos toppings", price:2.99},
     {n:"Sweet corn", q:"1 can + 1 small frozen bag — Taco Bowls, KFC", price:2.00},
     {n:"Basil pesto", q:"1 jar — Zuppa Toscana", price:3.49},
     {n:"Heinz classic chicken gravy", q:"1 jar — KFC Bowls", price:1.99},
@@ -666,6 +673,7 @@ function startOfDay(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()
 function addDays(d,n){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n); }
 function fmt(d){ return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 function fmtShort(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function fmtFull(d){ return d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}); }
 
 const today = startOfDay(new Date());
 let PERIOD = Math.floor((today - ANCHOR)/PERIODMS);
@@ -720,6 +728,20 @@ function initPrices(){
     unitSel[it.n]= UNIT_OPTIONS.indexOf(sUnit[it.n])>=0?sUnit[it.n]:"item";
   }));
 }
+function ensureDefaults(){
+  for(const k in STAPLE_DEFAULTS){
+    if(!staplePrices[k] || typeof staplePrices[k]!=="object") staplePrices[k]={};
+    STORES.forEach(st=>{ if(staplePrices[k][st]==null||isNaN(staplePrices[k][st])) staplePrices[k][st]=STAPLE_DEFAULTS[k].price; });
+    if(STORES.indexOf(storeSel[k])<0) storeSel[k]=DEFAULT_STORE;
+    if(UNIT_OPTIONS.indexOf(unitSel[k])<0) unitSel[k]=unitFromPer(STAPLE_DEFAULTS[k].per);
+  }
+  CATALOG.forEach(s=>s.items.forEach(it=>{
+    if(!prices[it.n] || typeof prices[it.n]!=="object") prices[it.n]={};
+    STORES.forEach(st=>{ if(prices[it.n][st]==null||isNaN(prices[it.n][st])) prices[it.n][st]=it.def; });
+    if(STORES.indexOf(storeSel[it.n])<0) storeSel[it.n]=DEFAULT_STORE;
+    if(UNIT_OPTIONS.indexOf(unitSel[it.n])<0) unitSel[it.n]="item";
+  }));
+}
 function storeOf(item){ return item.staple ? storeSel[item.staple] : storeSel[item.n]; }
 function priceOf(item){
   if(item.custom) return item.price||0;
@@ -743,7 +765,7 @@ function renderStatus(){
 function renderOverview(){
   const mk=(menu,start)=>menu.map((k,i)=>{
     const d=addDays(start,i);
-    return `<div class="ov"><div class="d">Day ${i+1} · ${fmtShort(d)}</div><div class="m">${R[k].title}</div></div>`;
+    return `<div class="ov" role="button" tabindex="0" onclick="openRecipe('${k}')" onkeypress="if(event.key==='Enter')openRecipe('${k}')"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">${R[k].title}</div><div class="open-hint">View recipe →</div></div>`;
   }).join("");
   document.getElementById("ovA").innerHTML =
     `<div class="week-label">Week 1</div>`+mk(CTX.A.menu.slice(0,7),CTX.A.start)+
@@ -920,6 +942,13 @@ function hideRecipeDetail(){
   document.getElementById("recipeDetail").style.display="none";
   document.getElementById("recipeIndex").style.display="block";
 }
+function openRecipe(k){
+  document.querySelectorAll("#tabs button").forEach(x=>x.classList.remove("active"));
+  var tb=document.querySelector('#tabs button[data-t="recipes"]'); if(tb) tb.classList.add("active");
+  document.querySelectorAll("section.panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("recipes").classList.add("active");
+  showRecipeDetail(k);
+}
 
 /* ============================ MISC ============================ */
 let toastT;
@@ -965,6 +994,7 @@ function applyRemote(data){
     if(s.prices)  prices=s.prices;
     if(s.store)   storeSel=s.store;
     if(s.unit)    unitSel=s.unit;
+    ensureDefaults();   // fill in any items the remote payload predates (e.g. newly added)
     remoteChecksAll = s.checks||{};
     remoteCustomAll = s.custom||{};
     checks.A = remoteChecksAll[CTX.A.key]||{};  checks.B = remoteChecksAll[CTX.B.key]||{};
