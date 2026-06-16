@@ -66,6 +66,25 @@
   .ov .m{font-weight:600;margin-top:3px;font-size:.92rem;line-height:1.25}
   .week-label{grid-column:1/-1;font-weight:700;color:var(--muted);font-size:.78rem;
     text-transform:uppercase;letter-spacing:.1em;margin-top:6px}
+  .ov.empty{opacity:.7;cursor:default}
+  .ov .m.muted{color:var(--muted);font-style:italic;font-weight:500}
+  .recipe.empty{opacity:.7}
+  .recipe h3.muted{color:var(--muted);font-style:italic;font-size:1.05rem}
+  .plan-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 4px}
+  .btn-edit{border:1px solid var(--accentA);background:var(--card);color:var(--accentA);
+    border-radius:999px;padding:8px 16px;font-size:.85rem;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit}
+  .btn-edit:hover{background:var(--accentA);color:#fff}
+  .edit-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 260px}
+  .et-hint{font-size:.78rem;color:var(--muted);flex:1 1 200px;min-width:160px}
+  .ov.editing{cursor:default}
+  .ov.editing .meal-sel{width:100%;margin-top:7px;border:1px solid var(--line);border-radius:8px;
+    padding:7px 8px;font-size:.86rem;background:#fff;color:var(--ink);font-family:inherit}
+  .ov-controls{display:flex;gap:5px;margin-top:8px}
+  .ov-controls button{flex:1;border:1px solid var(--line);background:#fff;color:var(--ink);
+    border-radius:7px;padding:6px 4px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+  .ov-controls button:hover:not(:disabled){border-color:var(--accentA);color:var(--accentA)}
+  .ov-controls button.rm:hover:not(:disabled){border-color:var(--warn);color:var(--warn)}
+  .ov-controls button:disabled{opacity:.35;cursor:not-allowed}
 
   .recipe{background:var(--card);border:1px solid var(--line);border-radius:16px;
     padding:18px 18px;margin:14px 0;box-shadow:var(--shadow)}
@@ -191,6 +210,14 @@
   <section class="panel active" id="overview">
     <h2 class="section-title">This Period at a Glance</h2>
     <p class="lead">Eight “anchor” dinners appear every cycle; six rotate in and out, so a new Cycle B never repeats the cycle it follows. Proteins are spread so you’re never eating chicken (or beef) two nights running.</p>
+    <div class="plan-toolbar">
+      <button id="editToggle" class="btn-edit" onclick="toggleEdit()">✏️ Edit plan</button>
+      <div id="editTools" class="edit-tools" style="display:none">
+        <span class="et-hint">▲▼ shifts a meal between days/weeks · the dropdown swaps or clears a day · ⇄ moves a meal to the other cycle. Changes save &amp; sync automatically.</span>
+        <button class="btn-reset" onclick="resetMealPlan('A')">↺ Reset Cycle A</button>
+        <button class="btn-reset" onclick="resetMealPlan('B')">↺ Reset Cycle B</button>
+      </div>
+    </div>
     <div class="cycleA">
       <h3 style="margin:16px 0 0">Cycle A <span class="date-range" id="ovARange"></span></h3>
       <div class="overview-grid" id="ovA"></div>
@@ -199,7 +226,7 @@
       <h3 style="margin:24px 0 0">Cycle B <span class="date-range" id="ovBRange"></span></h3>
       <div class="overview-grid" id="ovB"></div>
     </div>
-    <div class="tip" style="margin-top:20px">💡 <strong>How it works:</strong> Each cycle has its own consolidated grocery list grouped by store section. Tap items to check them off — and you can <strong>add your own items</strong> right on the grocery tab. Set real prices on the <strong>Prices</strong> tab (every item is editable) and they flow into the totals. Everything saves in your browser; your “next cycle” checklist carries over when it becomes the current cycle.</div>
+    <div class="tip" style="margin-top:20px">💡 <strong>How it works:</strong> Tap <strong>✏️ Edit plan</strong> above to move meals between days, weeks, or cycles, or clear a night entirely. Each cycle's grocery list is built automatically from the meals you've planned — <strong>quantities are summed from the recipes and rounded up to whole packages</strong>, so removing a meal drops what it needed and the totals follow. Set real prices on the <strong>Prices</strong> tab (every item is editable) and they flow into the totals. Everything saves in your browser and syncs across your devices.</div>
   </section>
 
   <section class="panel cycleA" id="cycleA">
@@ -492,179 +519,114 @@ const MENU_1 = ["bpc","spaghetti","snackwraps","mac","crunchwraps","garlicbrocco
 const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","pork"];
 
 /* ============================ GROCERY (one per menu) ============================ */
-const GROCERY_1 = [
-  {sec:"🥩 Meat & Seafood", items:[
-    {n:"Chicken breast", q:"~6 lb — Black Pepper Chicken, Spicy Garlic, Tacos, Alfredo, Stir Fry", staple:"chicken_breast", units:6},
-    {n:"Breaded chicken strips (frozen)", q:"1 box — Snack Wraps", price:5.99},
-    {n:"Frozen meatballs", q:"1 bag — Spaghetti", price:5.49},
-    {n:"Ground beef (80/20)", q:"2 lb — Crunch Wraps, Burgers", staple:"ground_beef", units:2},
-    {n:"Pork loin roast (boneless)", q:"~2.5 lb (2-3 lb roast) — Oven-Roasted Pork Loin", price:7.49},
-    {n:"Pepperoni", q:"1 pkg — Pizza", price:3.49},
-    {n:"Bacon", q:"1 lb — Breakfast", staple:"bacon", units:1},
-    {n:"Breakfast sausage", q:"1 lb — Breakfast", price:3.99}
-  ]},
-  {sec:"🥦 Produce", items:[
-    {n:"Yellow/white onions", q:"2 — Black Pepper Chicken & others", price:1.00},
-    {n:"Red onion", q:"1 — Chicken Tacos toppings", price:0.79},
-    {n:"Bell peppers (2)", q:"2 — Black Pepper Chicken", price:2.00},
-    {n:"Broccoli florets", q:"~1 lb / 2 crowns — Spicy Garlic, Stir Fry", price:2.50},
-    {n:"Garlic (2 heads)", q:"2 heads — multiple recipes", price:1.00},
-    {n:"Fresh ginger", q:"1 knob — Black Pepper Chicken, Stir Fry", price:0.79},
-    {n:"Carrots", q:"1 bag — Stir Fry + Thai garnish", price:1.49},
-    {n:"Iceberg lettuce", q:"1 head/bag — Snack & Crunch Wraps", price:1.99},
-    {n:"Roma tomatoes", q:"3 — Crunch Wraps", price:1.50},
-    {n:"Green onions", q:"1 bunch — Thai, Stir Fry", price:0.79},
-    {n:"Fresh cilantro", q:"1 bunch — Thai garnish", price:0.79}
-  ]},
-  {sec:"🧀 Dairy & Refrigerated", items:[
-    {n:"Butter", q:"1 lb box — Mac & Cheese", staple:"butter", units:1},
-    {n:"Milk", q:"1 gallon — Mac & Cheese", staple:"milk", units:1},
-    {n:"Monterey Jack cheese", q:"1 block (8 oz) — Mac & Cheese", price:2.99},
-    {n:"Sharp cheddar cheese (1 block)", q:"1 block (8 oz) — Mac & Cheese", price:2.49},
-    {n:"Mexican-blend shredded cheese", q:"2 bags (8 oz) — Snack & Crunch Wraps", staple:"shred_cheese", units:2},
-    {n:"Shredded mozzarella", q:"1 bag (8 oz) — Pizza", staple:"shred_cheese", units:1},
-    {n:"Grated Parmesan", q:"1 container — Pizza", price:3.49},
-    {n:"American cheese singles", q:"1 pack — Burgers", price:2.49},
-    {n:"Eggs", q:"1 dozen — Breakfast", staple:"eggs", units:1}
-  ]},
-  {sec:"🍝 Pasta, Sauces & Canned", items:[
-    {n:"Elbow macaroni", q:"16 oz — Mac & Cheese", staple:"pasta", units:1},
-    {n:"Spaghetti", q:"2 boxes — Spaghetti, Stir Fry", staple:"pasta", units:2},
-    {n:"Fettuccine", q:"1 box — Alfredo", staple:"pasta", units:1},
-    {n:"Linguine", q:"1 box — Spicy Thai Noodles", staple:"pasta", units:1},
-    {n:"Soba/rice noodles", q:"8 oz — Spicy Garlic Bowl", price:1.99},
-    {n:"Pasta sauce", q:"1 jar — Spaghetti", price:1.49},
-    {n:"Alfredo sauce", q:"1 jar — Alfredo", price:2.49},
-    {n:"Pizza tomato sauce", q:"1 can (8 oz) — Pizza", price:1.00},
-    {n:"Salsa", q:"1 jar (16 oz) — Chicken Tacos", price:1.99},
-    {n:"Diced green chilies", q:"1 can (4 oz) — Chicken Tacos", price:0.99},
-    {n:"Kroger queso dip", q:"1 jar — Crunch Wraps", price:2.99}
-  ]},
-  {sec:"🫙 Asian Pantry & Condiments", items:[
-    {n:"Light soy sauce", q:"1 bottle — multiple", price:2.49},
-    {n:"Dark soy sauce", q:"1 bottle — Black Pepper Chicken (optional; sub regular)", price:2.99},
-    {n:"Shaoxing wine (or dry sherry)", q:"1 bottle — Black Pepper Chicken (optional)", price:3.49},
-    {n:"Cornstarch", q:"1 box — Black Pepper Chicken", price:1.29},
-    {n:"Hoisin sauce", q:"1 jar — Stir Fry", price:2.49},
-    {n:"Toasted sesame oil", q:"1 bottle — Thai, Stir Fry", price:3.49},
-    {n:"Chili paste (sambal)", q:"1 jar — Spicy Garlic, Thai", price:2.99},
-    {n:"Sriracha", q:"1 bottle — Thai garnish", price:2.99},
-    {n:"Dry roasted peanuts", q:"1 jar — Thai garnish", price:2.49},
-    {n:"Sesame seeds", q:"1 jar — Thai, Stir Fry", price:2.00},
-    {n:"Honey", q:"1 bottle — Spicy Thai Noodles", price:3.49},
-    {n:"Worcestershire sauce", q:"1 bottle — Oven-Roasted Pork Loin", price:2.99},
-    {n:"Chicken broth", q:"1 carton — Black Pepper Chicken", price:1.49},
-    {n:"Vegetable/peanut oil", q:"1 bottle — Black Pepper Chicken, Thai", price:2.99},
-    {n:"Olive oil", q:"1 bottle — multiple", price:4.49},
-    {n:"Buffalo sauce", q:"1 bottle — Snack Wraps", price:2.49},
-    {n:"Ranch dressing", q:"1 bottle — Snack Wraps", price:2.49}
-  ]},
-  {sec:"🌮 Bread, Tortillas & Mix", items:[
-    {n:"Bread/all-purpose flour", q:"1 bag (5 lb) — Pizza dough, Mac roux", staple:"flour", units:1},
-    {n:"Instant yeast", q:"1 packet/3-pack — Pizza", price:0.99},
-    {n:"Large burrito tortillas", q:"1 pack — Crunch Wraps", staple:"tortillas", units:1},
-    {n:"Small flour tortillas", q:"1 pack — Snack Wraps, Chicken Tacos", staple:"tortillas", units:1},
-    {n:"Corn tortillas / tostadas", q:"1 pack — Crunch Wraps", price:1.99},
-    {n:"Hamburger buns", q:"1 pack — Burgers", price:1.99},
-    {n:"Pancake mix", q:"1 box — Breakfast", price:2.49},
-    {n:"Pancake/maple syrup", q:"1 bottle — Breakfast", price:2.99},
-    {n:"Taco seasoning", q:"2 packets — Crunch Wraps, Chicken Tacos", price:1.00}
-  ]},
-  {sec:"🧂 Spice Rack (likely on hand)", items:[
-    {n:"Spice-rack restock", q:"Black pepper, salt, paprika, garlic/onion powder, thyme, rosemary, cumin, cayenne, brown & white sugar, Italian seasoning, red pepper flakes — buy what you're out of", price:3.00}
-  ]}
+// Master grocery catalog. Each item is bought in `unit`; `per` lists how many
+// of that unit each recipe needs (fractions allowed — e.g. 0.1 bottle of soy
+// sauce). A cycle's quantity is the sum of `per` across the meals actually
+// planned, then rounded UP to whole packages (meat stays fractional by the lb).
+// price = the per-unit/per-package price (editable on the Prices tab) × quantity.
+const GITEMS = [
+  // 🥩 Meat & Seafood
+  {n:"Chicken breast", sec:"🥩 Meat & Seafood", staple:"chicken_breast", unit:"lb", divisible:true, per:{bpc:1, garlicbroccoli:1, tacos:2, alfredo:1, stirfry:1, padthai:0.5}},
+  {n:"Ground beef", sec:"🥩 Meat & Seafood", staple:"ground_beef", unit:"lb", divisible:true, per:{crunchwraps:1, burgers:1, helper:1, tacobowls:1}},
+  {n:"Pork tenderloin", sec:"🥩 Meat & Seafood", staple:"pork_tenderloin", unit:"lb", divisible:true, per:{pork:2}},
+  {n:"Pork loin roast (boneless)", sec:"🥩 Meat & Seafood", price:7.49, unit:"roast", per:{porkloin:1}},
+  {n:"Ground spicy Italian chicken sausage", sec:"🥩 Meat & Seafood", price:3.99, unit:"pack", per:{zuppa:1}},
+  {n:"Bacon", sec:"🥩 Meat & Seafood", staple:"bacon", unit:"pack", per:{breakfast:1, zuppa:0.5}},
+  {n:"Breakfast sausage", sec:"🥩 Meat & Seafood", price:3.99, unit:"lb", per:{breakfast:1}},
+  {n:"Breaded chicken strips (frozen)", sec:"🥩 Meat & Seafood", price:5.99, unit:"box", per:{snackwraps:1}},
+  {n:"Frozen popcorn chicken / nuggets", sec:"🥩 Meat & Seafood", price:5.99, unit:"bag", per:{kfc:1}},
+  {n:"Frozen meatballs", sec:"🥩 Meat & Seafood", price:5.49, unit:"bag", per:{spaghetti:1}},
+  {n:"Pepperoni", sec:"🥩 Meat & Seafood", price:3.49, unit:"pkg", per:{pizza:1}},
+  // 🥦 Produce
+  {n:"Yellow onions", sec:"🥦 Produce", price:0.50, unit:"onion", per:{bpc:0.5, helper:1, zuppa:1}},
+  {n:"Red onion", sec:"🥦 Produce", price:0.79, unit:"onion", per:{tacos:1}},
+  {n:"Bell peppers", sec:"🥦 Produce", price:1.00, unit:"bell pepper", per:{bpc:2, padthai:1}},
+  {n:"Broccoli florets", sec:"🥦 Produce", price:1.25, unit:"crown", per:{garlicbroccoli:1, stirfry:1}},
+  {n:"Garlic", sec:"🥦 Produce", price:0.50, unit:"head", per:{garlicpasta:2, pork:0.5, zuppa:0.3, bpc:0.15, stirfry:0.2, garlicbroccoli:0.3, padthai:0.2}},
+  {n:"Fresh ginger", sec:"🥦 Produce", price:0.79, unit:"knob", per:{bpc:0.5, stirfry:0.5}},
+  {n:"Carrots", sec:"🥦 Produce", price:1.49, unit:"bag", per:{stirfry:0.3, thainoodles:0.2}},
+  {n:"Iceberg lettuce", sec:"🥦 Produce", price:1.99, unit:"head", per:{snackwraps:0.4, crunchwraps:0.5, tacobowls:0.5}},
+  {n:"Tomatoes", sec:"🥦 Produce", price:0.50, unit:"tomato", per:{crunchwraps:3, tacobowls:2}},
+  {n:"Green onions", sec:"🥦 Produce", price:0.79, unit:"bunch", per:{thainoodles:0.4, stirfry:0.3, padthai:0.5}},
+  {n:"Fresh cilantro", sec:"🥦 Produce", price:0.79, unit:"bunch", per:{thainoodles:0.3, tacos:0.3, padthai:0.4, tacobowls:0.3}},
+  {n:"Celery", sec:"🥦 Produce", price:1.79, unit:"bunch", per:{zuppa:1}},
+  {n:"Yukon gold / russet potatoes", sec:"🥦 Produce", price:2.99, unit:"bag", per:{zuppa:1}},
+  {n:"Kale (Tuscan or curly)", sec:"🥦 Produce", price:1.99, unit:"bunch", per:{zuppa:1}},
+  {n:"Limes", sec:"🥦 Produce", price:0.25, unit:"lime", per:{padthai:2}},
+  {n:"Lemon", sec:"🥦 Produce", price:0.50, unit:"lemon", per:{zuppa:1}},
+  {n:"Fresh parsley", sec:"🥦 Produce", price:0.79, unit:"bunch", per:{garlicpasta:1}},
+  {n:"Bean sprouts", sec:"🥦 Produce", price:1.49, unit:"bag", per:{padthai:1}},
+  // 🧀 Dairy & Refrigerated
+  {n:"Butter", sec:"🧀 Dairy & Refrigerated", staple:"butter", unit:"box", per:{mac:0.25, garlicpasta:0.25, helper:0.06}},
+  {n:"Milk", sec:"🧀 Dairy & Refrigerated", staple:"milk", unit:"gallon", per:{mac:0.2, helper:0.1}},
+  {n:"Heavy cream", sec:"🧀 Dairy & Refrigerated", price:2.49, unit:"pint", per:{zuppa:1}},
+  {n:"Monterey Jack cheese", sec:"🧀 Dairy & Refrigerated", price:2.99, unit:"block", per:{mac:0.5}},
+  {n:"Sharp cheddar cheese", sec:"🧀 Dairy & Refrigerated", price:2.49, unit:"block", per:{mac:0.5, helper:1}},
+  {n:"Shredded cheddar", sec:"🧀 Dairy & Refrigerated", staple:"shred_cheese", unit:"bag", per:{kfc:1}},
+  {n:"Shredded mozzarella", sec:"🧀 Dairy & Refrigerated", staple:"shred_cheese", unit:"bag", per:{pizza:1}},
+  {n:"Mexican-blend shredded cheese", sec:"🧀 Dairy & Refrigerated", staple:"shred_cheese", unit:"bag", per:{snackwraps:1, crunchwraps:1}},
+  {n:"Grated Parmesan", sec:"🧀 Dairy & Refrigerated", price:3.49, unit:"container", per:{pizza:0.3, garlicpasta:0.2, zuppa:0.2}},
+  {n:"American cheese singles", sec:"🧀 Dairy & Refrigerated", price:2.49, unit:"pack", per:{burgers:1}},
+  {n:"Sour cream", sec:"🧀 Dairy & Refrigerated", price:1.99, unit:"tub", per:{tacobowls:1}},
+  {n:"Eggs", sec:"🧀 Dairy & Refrigerated", staple:"eggs", unit:"dozen", per:{breakfast:0.5, padthai:0.2}},
+  // 🍝 Pasta, Rice, Sauces & Canned
+  {n:"Spaghetti", sec:"🍝 Pasta, Rice, Sauces & Canned", staple:"pasta", unit:"box", per:{spaghetti:1, stirfry:0.5, garlicpasta:1}},
+  {n:"Fettuccine", sec:"🍝 Pasta, Rice, Sauces & Canned", staple:"pasta", unit:"box", per:{alfredo:1}},
+  {n:"Linguine", sec:"🍝 Pasta, Rice, Sauces & Canned", staple:"pasta", unit:"box", per:{thainoodles:1}},
+  {n:"Elbow macaroni", sec:"🍝 Pasta, Rice, Sauces & Canned", staple:"pasta", unit:"box", per:{mac:1}},
+  {n:"Cavatappi/macaroni", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.25, unit:"box", per:{helper:1}},
+  {n:"Flat rice noodles", sec:"🍝 Pasta, Rice, Sauces & Canned", price:2.49, unit:"pack", per:{padthai:1}},
+  {n:"Soba/rice noodles", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.99, unit:"pack", per:{garlicbroccoli:1}},
+  {n:"Long-grain white rice", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.99, unit:"bag", per:{tacobowls:0.3}},
+  {n:"Pasta sauce", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.49, unit:"jar", per:{spaghetti:1}},
+  {n:"Alfredo sauce", sec:"🍝 Pasta, Rice, Sauces & Canned", price:2.49, unit:"jar", per:{alfredo:1}},
+  {n:"Pizza tomato sauce", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.00, unit:"can", per:{pizza:1}},
+  {n:"Salsa", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.99, unit:"jar", per:{tacos:1}},
+  {n:"Diced green chilies", sec:"🍝 Pasta, Rice, Sauces & Canned", price:0.99, unit:"can", per:{tacos:1}},
+  {n:"Black beans", sec:"🍝 Pasta, Rice, Sauces & Canned", price:0.99, unit:"can", per:{tacobowls:1}},
+  {n:"Kroger queso dip", sec:"🍝 Pasta, Rice, Sauces & Canned", price:2.99, unit:"jar", per:{crunchwraps:0.6, tacos:0.5}},
+  {n:"Sweet corn", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.00, unit:"can", per:{tacobowls:1, kfc:1}},
+  {n:"Basil pesto", sec:"🍝 Pasta, Rice, Sauces & Canned", price:3.49, unit:"jar", per:{zuppa:1}},
+  {n:"Heinz classic chicken gravy", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.99, unit:"jar", per:{kfc:1}},
+  {n:"Instant mashed potatoes", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.99, unit:"box", per:{kfc:1}},
+  {n:"Tomato paste", sec:"🍝 Pasta, Rice, Sauces & Canned", price:0.89, unit:"can", per:{helper:1}},
+  {n:"Chicken broth (low-sodium)", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.49, unit:"carton", per:{bpc:0.2, zuppa:1.5}},
+  {n:"Beef broth", sec:"🍝 Pasta, Rice, Sauces & Canned", price:1.49, unit:"carton", per:{helper:0.5}},
+  // 🫙 Asian Pantry & Condiments
+  {n:"Light soy sauce", sec:"🫙 Asian Pantry & Condiments", price:2.49, unit:"bottle", per:{bpc:0.1, stirfry:0.1, garlicbroccoli:0.05, thainoodles:0.3, padthai:0.05, pork:0.1}},
+  {n:"Dark soy sauce", sec:"🫙 Asian Pantry & Condiments", price:2.99, unit:"bottle", per:{bpc:0.05}},
+  {n:"Shaoxing wine (or dry sherry)", sec:"🫙 Asian Pantry & Condiments", price:3.49, unit:"bottle", per:{bpc:0.1}},
+  {n:"Cornstarch", sec:"🫙 Asian Pantry & Condiments", price:1.29, unit:"box", per:{bpc:0.2}},
+  {n:"Hoisin sauce", sec:"🫙 Asian Pantry & Condiments", price:2.49, unit:"jar", per:{stirfry:0.2}},
+  {n:"Toasted sesame oil", sec:"🫙 Asian Pantry & Condiments", price:3.49, unit:"bottle", per:{thainoodles:0.4, stirfry:0.1}},
+  {n:"Chili paste (sambal)", sec:"🫙 Asian Pantry & Condiments", price:2.99, unit:"jar", per:{garlicbroccoli:0.1, thainoodles:0.1}},
+  {n:"Sriracha", sec:"🫙 Asian Pantry & Condiments", price:2.99, unit:"bottle", per:{thainoodles:0.05, padthai:0.1}},
+  {n:"Dry roasted peanuts", sec:"🫙 Asian Pantry & Condiments", price:2.49, unit:"jar", per:{thainoodles:0.3, padthai:0.3}},
+  {n:"Sesame seeds", sec:"🫙 Asian Pantry & Condiments", price:2.00, unit:"jar", per:{thainoodles:0.1, stirfry:0.1}},
+  {n:"Honey", sec:"🫙 Asian Pantry & Condiments", price:3.49, unit:"bottle", per:{thainoodles:0.3, pork:0.4}},
+  {n:"Worcestershire sauce", sec:"🫙 Asian Pantry & Condiments", price:2.99, unit:"bottle", per:{porkloin:0.1}},
+  {n:"Fish sauce", sec:"🫙 Asian Pantry & Condiments", price:2.99, unit:"bottle", per:{padthai:0.2}},
+  {n:"Rice vinegar", sec:"🫙 Asian Pantry & Condiments", price:2.29, unit:"bottle", per:{padthai:0.1}},
+  {n:"Creamy peanut butter", sec:"🫙 Asian Pantry & Condiments", price:2.49, unit:"jar", per:{padthai:0.1}},
+  {n:"Apple cider vinegar", sec:"🫙 Asian Pantry & Condiments", price:1.99, unit:"bottle", per:{pork:0.1}},
+  {n:"Vegetable/peanut oil", sec:"🫙 Asian Pantry & Condiments", price:2.99, unit:"bottle", per:{bpc:0.1, thainoodles:0.1, padthai:0.1}},
+  {n:"Olive oil", sec:"🫙 Asian Pantry & Condiments", price:4.49, unit:"bottle", per:{garlicbroccoli:0.05, stirfry:0.05, porkloin:0.05, garlicpasta:0.05, pork:0.05, tacobowls:0.05, zuppa:0.05}},
+  {n:"Buffalo sauce", sec:"🫙 Asian Pantry & Condiments", price:2.49, unit:"bottle", per:{snackwraps:0.3}},
+  {n:"Ranch dressing", sec:"🫙 Asian Pantry & Condiments", price:2.49, unit:"bottle", per:{snackwraps:0.3}},
+  // 🌮 Bread, Tortillas & Mix
+  {n:"Bread/all-purpose flour", sec:"🌮 Bread, Tortillas & Mix", staple:"flour", unit:"bag", per:{pizza:0.2, mac:0.05, helper:0.05}},
+  {n:"Instant yeast", sec:"🌮 Bread, Tortillas & Mix", price:0.99, unit:"packet", per:{pizza:1}},
+  {n:"Large burrito tortillas", sec:"🌮 Bread, Tortillas & Mix", staple:"tortillas", unit:"pack", per:{crunchwraps:1}},
+  {n:"Small flour tortillas", sec:"🌮 Bread, Tortillas & Mix", staple:"tortillas", unit:"pack", per:{snackwraps:1, tacos:1}},
+  {n:"Corn tortillas / tostadas", sec:"🌮 Bread, Tortillas & Mix", price:1.99, unit:"pack", per:{crunchwraps:1}},
+  {n:"Hamburger buns", sec:"🌮 Bread, Tortillas & Mix", price:1.99, unit:"pack", per:{burgers:1}},
+  {n:"Pancake mix", sec:"🌮 Bread, Tortillas & Mix", price:2.49, unit:"box", per:{breakfast:1}},
+  {n:"Pancake/maple syrup", sec:"🌮 Bread, Tortillas & Mix", price:2.99, unit:"bottle", per:{breakfast:1}},
+  {n:"Taco seasoning", sec:"🌮 Bread, Tortillas & Mix", price:1.00, unit:"packet", per:{crunchwraps:1, tacos:1, tacobowls:1}},
+  // 🧂 Spice Rack
+  {n:"Spice-rack restock", sec:"🧂 Spice Rack (likely on hand)", price:3.00, unit:"trip", always:true, note:"Buy what you're out of — pepper, paprika, garlic/onion powder, thyme, cumin, cayenne, sugar, Italian seasoning, red pepper flakes"}
 ];
-const GROCERY_2 = [
-  {sec:"🥩 Meat & Seafood", items:[
-    {n:"Chicken breast", q:"~5 lb — Black Pepper Chicken, Tacos, Alfredo, Pad Thai", staple:"chicken_breast", units:5},
-    {n:"Frozen popcorn chicken / nuggets", q:"1 bag (≥10 oz) — KFC Bowls", price:5.99},
-    {n:"Frozen meatballs", q:"1 bag — Spaghetti", price:5.49},
-    {n:"Ground beef", q:"3 lb — Burgers, Hamburger Helper, Taco Bowls", staple:"ground_beef", units:3},
-    {n:"Pork tenderloin", q:"2 lb (≈2 tenderloins) — Pork Tenderloin", staple:"pork_tenderloin", units:2},
-    {n:"Ground spicy Italian chicken sausage", q:"3/4 lb — Zuppa Toscana", price:3.99},
-    {n:"Bacon", q:"1 pack — Zuppa Toscana", staple:"bacon", units:1},
-    {n:"Pepperoni", q:"1 pkg — Pizza", price:3.49}
-  ]},
-  {sec:"🥦 Produce", items:[
-    {n:"Yellow onions", q:"3 — Black Pepper Chicken, Hamburger Helper, Zuppa", price:1.50},
-    {n:"Red onion", q:"1 — Chicken Tacos toppings", price:0.79},
-    {n:"Bell peppers (3)", q:"3 (incl. 1 red) — Black Pepper Chicken, Pad Thai", price:3.00},
-    {n:"Garlic (3 heads)", q:"3 heads — Pork, Roasted Garlic Pasta, Zuppa, others", price:1.50},
-    {n:"Fresh ginger", q:"1 knob — Black Pepper Chicken", price:0.79},
-    {n:"Celery", q:"1 bunch — Zuppa Toscana", price:1.79},
-    {n:"Yukon gold / russet potatoes", q:"small bag — Zuppa Toscana", price:2.99},
-    {n:"Kale (Tuscan or curly)", q:"1 bunch — Zuppa Toscana", price:1.99},
-    {n:"Iceberg lettuce", q:"1 head — Taco Bowls", price:1.99},
-    {n:"Tomatoes", q:"2 — Taco Bowls", price:1.50},
-    {n:"Limes", q:"2 — Pad Thai", price:0.50},
-    {n:"Lemon", q:"1 — Zuppa Toscana", price:0.50},
-    {n:"Green onions", q:"1 bunch — Pad Thai", price:0.79},
-    {n:"Fresh cilantro", q:"1 bunch — Pad Thai, Taco Bowls", price:0.79},
-    {n:"Fresh parsley", q:"1 bunch — Roasted Garlic Pasta", price:0.79},
-    {n:"Bean sprouts", q:"1 bag — Pad Thai", price:1.49}
-  ]},
-  {sec:"🧀 Dairy & Refrigerated", items:[
-    {n:"Butter", q:"1 lb box — Mac, Roasted Garlic Pasta, Hamburger Helper", staple:"butter", units:1},
-    {n:"Milk", q:"1 gallon — Mac, Hamburger Helper", staple:"milk", units:1},
-    {n:"Heavy cream", q:"1 pint — Zuppa Toscana", price:2.49},
-    {n:"Monterey Jack cheese", q:"1 block (8 oz) — Mac & Cheese", price:2.99},
-    {n:"Sharp cheddar cheese (2 blocks)", q:"2 blocks (8 oz) — Mac, Hamburger Helper", price:4.98},
-    {n:"Shredded cheddar", q:"1 bag (8 oz) — KFC Bowls", staple:"shred_cheese", units:1},
-    {n:"Shredded mozzarella", q:"1 bag (8 oz) — Pizza", staple:"shred_cheese", units:1},
-    {n:"Grated Parmesan", q:"1 container — Pizza, Roasted Garlic, Zuppa", price:3.49},
-    {n:"American cheese singles", q:"1 pack — Burgers", price:2.49},
-    {n:"Sour cream", q:"1 tub — Taco Bowls", price:1.99},
-    {n:"Eggs", q:"1 dozen — Pad Thai", staple:"eggs", units:1}
-  ]},
-  {sec:"🍝 Pasta, Rice, Sauces & Canned", items:[
-    {n:"Spaghetti", q:"2 boxes — Spaghetti, Roasted Garlic Pasta", staple:"pasta", units:2},
-    {n:"Fettuccine", q:"1 box — Alfredo", staple:"pasta", units:1},
-    {n:"Flat rice noodles", q:"8 oz — Pad Thai", price:2.49},
-    {n:"Elbow macaroni", q:"16 oz — Mac & Cheese", staple:"pasta", units:1},
-    {n:"Cavatappi/macaroni", q:"1/2 lb — Hamburger Helper", price:1.25},
-    {n:"Long-grain white rice", q:"1 bag — Taco Bowls", price:1.99},
-    {n:"Pasta sauce", q:"1 jar — Spaghetti", price:1.49},
-    {n:"Alfredo sauce", q:"1 jar — Alfredo", price:2.49},
-    {n:"Pizza tomato sauce", q:"1 can (8 oz) — Pizza", price:1.00},
-    {n:"Salsa", q:"1 jar (16 oz) — Chicken Tacos", price:1.99},
-    {n:"Diced green chilies", q:"1 can (4 oz) — Chicken Tacos", price:0.99},
-    {n:"Black beans", q:"1 can (15 oz) — Taco Bowls", price:0.99},
-    {n:"Kroger queso dip", q:"1 jar — Chicken Tacos toppings", price:2.99},
-    {n:"Sweet corn", q:"1 can + 1 small frozen bag — Taco Bowls, KFC", price:2.00},
-    {n:"Basil pesto", q:"1 jar — Zuppa Toscana", price:3.49},
-    {n:"Heinz classic chicken gravy", q:"1 jar — KFC Bowls", price:1.99},
-    {n:"Instant mashed potatoes", q:"1 box — KFC Bowls", price:1.99},
-    {n:"Tomato paste", q:"1 small can — Hamburger Helper", price:0.89},
-    {n:"Chicken broth (low-sodium)", q:"2 cartons — Zuppa, Black Pepper Chicken", price:2.98},
-    {n:"Beef broth", q:"1 carton — Hamburger Helper", price:1.49}
-  ]},
-  {sec:"🫙 Asian & Thai Pantry", items:[
-    {n:"Light soy sauce", q:"1 bottle — Black Pepper Chicken, Pad Thai", price:2.49},
-    {n:"Dark soy sauce", q:"1 bottle — Black Pepper Chicken (optional)", price:2.99},
-    {n:"Shaoxing wine (or dry sherry)", q:"1 bottle — Black Pepper Chicken (optional)", price:3.49},
-    {n:"Cornstarch", q:"1 box — Black Pepper Chicken", price:1.29},
-    {n:"Fish sauce", q:"1 bottle — Pad Thai", price:2.99},
-    {n:"Rice vinegar", q:"1 bottle — Pad Thai", price:2.29},
-    {n:"Sriracha", q:"1 bottle — Pad Thai", price:2.99},
-    {n:"Creamy peanut butter", q:"1 jar — Pad Thai (optional)", price:2.49},
-    {n:"Dry roasted peanuts", q:"1 jar — Pad Thai garnish", price:2.49},
-    {n:"Honey", q:"1 bottle — Pork Tenderloin", price:3.49},
-    {n:"Apple cider vinegar", q:"1 bottle — Pork Tenderloin", price:1.99},
-    {n:"Olive oil", q:"1 bottle — multiple", price:4.49}
-  ]},
-  {sec:"🌮 Bread, Tortillas & Mix", items:[
-    {n:"Bread/all-purpose flour", q:"1 bag (5 lb) — Pizza dough, Hamburger Helper roux", staple:"flour", units:1},
-    {n:"Instant yeast", q:"1 packet — Pizza", price:0.99},
-    {n:"Small flour tortillas", q:"1 pack — Chicken Tacos", staple:"tortillas", units:1},
-    {n:"Hamburger buns", q:"1 pack — Burgers", price:1.99},
-    {n:"Taco seasoning", q:"2 packets — Chicken Tacos, Taco Bowls", price:1.00}
-  ]},
-  {sec:"🧂 Spice Rack (likely on hand)", items:[
-    {n:"Spice-rack restock", q:"Smoked paprika, garlic/onion powder, thyme, cumin, cayenne, paprika, brown sugar, red pepper flakes, Italian seasoning — buy what you're out of", price:3.00}
-  ]}
-];
-
-function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_1, groc:GROCERY_1} : {menu:MENU_2, groc:GROCERY_2}; }
+function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_1} : {menu:MENU_2}; }
 
 /* ============================ DATES / ROTATION ============================ */
 const ANCHOR = new Date(2026,0,4);              // Sunday, Jan 4 2026 — period 0 start
@@ -692,24 +654,39 @@ const CTX = {
 const LS = { staples:"mp_staples_v3", prices:"mp_prices_v3", store:"mp_store_v3", unit:"mp_unit_v3" };
 const ckChecks = p => "mp_checks_"+p;
 const ckCustom = p => "mp_custom_"+p;
+const ckMeals  = p => "mp_meals_"+p;
 function load(key,fb){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fb; }catch(e){ return fb; } }
 function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch(e){} scheduleSyncPush(); }
 let checks = { A:load(ckChecks(CTX.A.key),{}), B:load(ckChecks(CTX.B.key),{}) };
 let custom = { A:load(ckCustom(CTX.A.key),[]),  B:load(ckCustom(CTX.B.key),[]) };
 
+/* ============================ EDITABLE MEAL PLAN ============================ */
+// A cycle's plan is a 14-slot array of recipe keys (or null for an empty day).
+// Stored per period key (like checks/custom) so edits to "up next" carry over
+// automatically when that period rolls in to become the current cycle.
+function defaultMenu(key){ return datasetForPeriod(key).menu.slice(); }
+function normalizeMenu(arr){
+  const a=(arr||[]).slice(0,14);
+  while(a.length<14) a.push(null);
+  return a.map(k => (k && R[k]) ? k : null);
+}
+let mealPlan = {
+  A: normalizeMenu(load(ckMeals(CTX.A.key), null) || defaultMenu(CTX.A.key)),
+  B: normalizeMenu(load(ckMeals(CTX.B.key), null) || defaultMenu(CTX.B.key))
+};
+let editMode = false;
+function saveMeals(slot){ save(ckMeals(CTX[slot].key), mealPlan[slot]); }
+
 /* ============================ PRICE CATALOG ============================ */
-let CATALOG = []; // [{sec, items:[{n, def}]}] non-staple, deduped across both menus
+let CATALOG = []; // [{sec, items:[{n, def}]}] non-staple price-editable items
 function buildCatalog(){
   const seen=new Set(), secMap=new Map();
-  [GROCERY_1,GROCERY_2].forEach(ds=>ds.forEach(section=>{
-    section.items.forEach(it=>{
-      if(it.staple) return;
-      if(seen.has(it.n)) return;
-      seen.add(it.n);
-      if(!secMap.has(section.sec)) secMap.set(section.sec,[]);
-      secMap.get(section.sec).push({n:it.n, def:it.price||0});
-    });
-  }));
+  GITEMS.forEach(it=>{
+    if(it.staple) return;          // staples are priced per-unit on their own table
+    if(seen.has(it.n)) return; seen.add(it.n);
+    if(!secMap.has(it.sec)) secMap.set(it.sec,[]);
+    secMap.get(it.sec).push({n:it.n, def:it.price||0});
+  });
   CATALOG = Array.from(secMap.entries()).map(([sec,items])=>({sec,items}));
 }
 function initPrices(){
@@ -743,10 +720,14 @@ function ensureDefaults(){
   }));
 }
 function storeOf(item){ return item.staple ? storeSel[item.staple] : storeSel[item.n]; }
-function priceOf(item){
-  if(item.custom) return item.price||0;
-  if(item.staple){ const sp=staplePrices[item.staple], st=storeSel[item.staple]||DEFAULT_STORE; return ((sp&&sp[st])||0)*item.units; }
+// price of one purchase unit (per lb, per jar, …) at the selected store
+function unitPrice(item){
+  if(item.staple){ const sp=staplePrices[item.staple], st=storeSel[item.staple]||DEFAULT_STORE; return (sp&&sp[st])||0; }
   const pp=prices[item.n], st=storeSel[item.n]||DEFAULT_STORE; return (pp&&pp[st]!=null)?pp[st]:(item.price||0);
+}
+function priceOf(item,qty){
+  if(item.custom) return item.price||0;
+  return unitPrice(item)*(qty==null?1:qty);
 }
 function money(n){ return "$"+(Math.round(n*100)/100).toFixed(2); }
 
@@ -762,17 +743,65 @@ function renderStatus(){
   document.getElementById("recARange").textContent = `· ${fmtShort(CTX.A.start)} – ${fmtShort(CTX.A.end)}`;
   document.getElementById("recBRange").textContent = `· ${fmtShort(CTX.B.start)} – ${fmtShort(CTX.B.end)}`;
 }
+function recipeOptions(sel){
+  return `<option value="">— no meal —</option>`+
+    ALL_RECIPE_KEYS.map(k=>`<option value="${k}" ${sel===k?'selected':''}>${R[k].title}</option>`).join("");
+}
+function dayCard(slot,i){
+  const k=mealPlan[slot][i], d=addDays(CTX[slot].start,i), other=slot==='A'?'B':'A';
+  if(editMode){
+    return `<div class="ov editing">
+      <div class="d">Day ${i+1} · ${fmtFull(d)}</div>
+      <select class="meal-sel" onchange="changeMeal('${slot}',${i},this.value)">${recipeOptions(k)}</select>
+      <div class="ov-controls">
+        <button title="Move to earlier day" onclick="moveMeal('${slot}',${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button title="Move to later day" onclick="moveMeal('${slot}',${i},1)" ${i===13?'disabled':''}>▼</button>
+        <button title="Move to Cycle ${other}" onclick="sendOther('${slot}',${i})" ${k?'':'disabled'}>⇄ ${other}</button>
+        <button title="Remove meal" class="rm" onclick="removeMeal('${slot}',${i})" ${k?'':'disabled'}>✕</button>
+      </div></div>`;
+  }
+  if(!k) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m muted">— no meal —</div></div>`;
+  return `<div class="ov" role="button" tabindex="0" onclick="openRecipe('${k}')" onkeypress="if(event.key==='Enter')openRecipe('${k}')"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">${R[k].title}</div><div class="open-hint">View recipe →</div></div>`;
+}
 function renderOverview(){
-  const mk=(menu,start)=>menu.map((k,i)=>{
-    const d=addDays(start,i);
-    return `<div class="ov" role="button" tabindex="0" onclick="openRecipe('${k}')" onkeypress="if(event.key==='Enter')openRecipe('${k}')"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">${R[k].title}</div><div class="open-hint">View recipe →</div></div>`;
-  }).join("");
+  const mk=(slot,from,to)=>{ let s=""; for(let i=from;i<to;i++) s+=dayCard(slot,i); return s; };
   document.getElementById("ovA").innerHTML =
-    `<div class="week-label">Week 1</div>`+mk(CTX.A.menu.slice(0,7),CTX.A.start)+
-    `<div class="week-label">Week 2</div>`+mk(CTX.A.menu.slice(7),addDays(CTX.A.start,7));
+    `<div class="week-label">Week 1</div>`+mk('A',0,7)+
+    `<div class="week-label">Week 2</div>`+mk('A',7,14);
   document.getElementById("ovB").innerHTML =
-    `<div class="week-label">Week 1</div>`+mk(CTX.B.menu.slice(0,7),CTX.B.start)+
-    `<div class="week-label">Week 2</div>`+mk(CTX.B.menu.slice(7),addDays(CTX.B.start,7));
+    `<div class="week-label">Week 1</div>`+mk('B',0,7)+
+    `<div class="week-label">Week 2</div>`+mk('B',7,14);
+  const tgl=document.getElementById("editToggle"); if(tgl) tgl.textContent = editMode?"✓ Done editing":"✏️ Edit plan";
+  const tools=document.getElementById("editTools"); if(tools) tools.style.display = editMode?"flex":"none";
+}
+function toggleEdit(){ editMode=!editMode; renderOverview(); }
+function changeMeal(slot,i,val){
+  mealPlan[slot][i] = (val && R[val]) ? val : null;
+  saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot);
+  toast(val ? "Meal set" : "Meal cleared");
+}
+function moveMeal(slot,i,dir){
+  const j=i+dir; if(j<0||j>13) return;
+  const a=mealPlan[slot], t=a[i]; a[i]=a[j]; a[j]=t;
+  saveMeals(slot); renderOverview(); renderRecipes(); toast("Moved");
+}
+function removeMeal(slot,i){
+  if(!mealPlan[slot][i]) return;
+  mealPlan[slot][i]=null;
+  saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot); toast("Meal removed");
+}
+function sendOther(slot,i){
+  const k=mealPlan[slot][i]; if(!k) return;
+  const other=slot==='A'?'B':'A', dest=mealPlan[other].indexOf(null);
+  if(dest<0){ toast("Cycle "+other+" has no empty day — remove one there first"); return; }
+  mealPlan[other][dest]=k; mealPlan[slot][i]=null;
+  saveMeals(slot); saveMeals(other);
+  renderOverview(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
+  toast("Moved to Cycle "+other+", Day "+(dest+1));
+}
+function resetMealPlan(slot){
+  mealPlan[slot]=defaultMenu(CTX[slot].key);
+  saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot); toast("Cycle "+slot+" reset");
 }
 
 /* ============================ RECIPES ============================ */
@@ -795,19 +824,65 @@ function recipeCard(k,dayNo,date){
       <div><h4>Instructions</h4><ol class="steps">${r.steps.map(s=>`<li>${s}</li>`).join("")}</ol>${note}</div>
     </div></article>`;
 }
+function recipesHTML(slot){
+  return mealPlan[slot].map((k,i)=>{
+    const date=addDays(CTX[slot].start,i);
+    if(!k) return `<article class="recipe empty"><span class="day-tag">Day ${i+1} · ${fmt(date)}</span><h3 class="muted">No dinner planned</h3></article>`;
+    return recipeCard(k,i+1,date);
+  }).join("");
+}
 function renderRecipes(){
-  document.getElementById("recipesA").innerHTML = CTX.A.menu.map((k,i)=>recipeCard(k,i+1,addDays(CTX.A.start,i))).join("");
-  document.getElementById("recipesB").innerHTML = CTX.B.menu.map((k,i)=>recipeCard(k,i+1,addDays(CTX.B.start,i))).join("");
+  document.getElementById("recipesA").innerHTML = recipesHTML('A');
+  document.getElementById("recipesB").innerHTML = recipesHTML('B');
 }
 
 /* ============================ GROCERY ============================ */
+function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+function gid(sec,name){ return slug(sec)+"__"+slug(name); }   // stable id, independent of position
+// How many purchase units this cycle needs of an item: sum the per-recipe
+// amounts for the meals actually planned, then round UP to whole packages
+// (meat/divisible items keep a fractional weight, rounded up to the nearest 0.5).
+function qtyOf(item,present){
+  if(item.always) return 1;
+  let q=0; const per=item.per||{};
+  for(const k in per){ if(present.has(k)) q+=per[k]; }
+  if(q<=0) return 0;
+  return item.divisible ? Math.ceil(q*2)/2 : Math.ceil(q-1e-9);
+}
+function unitLabel(unit,q){
+  if(unit==="lb") return "lb";
+  if(q===1) return unit;
+  if(/o$/.test(unit)) return unit+"es";            // tomato -> tomatoes
+  if(/(ch|sh|s|x|z)$/.test(unit)) return unit+"es"; // bunch -> bunches, box -> boxes
+  return unit+"s";
+}
+function fmtQty(q){ return (Math.round(q)===q) ? String(q) : q.toFixed(1); }
+function qtyLabel(e){
+  if(e.item.always) return e.item.note||"as needed";
+  const used = (e.used&&e.used.length) ? " — "+e.used.join(", ") : "";
+  return `${fmtQty(e.qty)} ${unitLabel(e.item.unit,e.qty)}${used}`;
+}
+// Build the cycle's grocery list straight from its planned meals.
+function effectiveGrocery(slot){
+  const present=new Set((mealPlan[slot]||[]).filter(Boolean));
+  const sections=[], idx={};
+  function sec(name){ if(idx[name]==null){ idx[name]=sections.length; sections.push({sec:name,items:[]}); } return sections[idx[name]]; }
+  GITEMS.forEach(item=>{
+    const qty=qtyOf(item,present);
+    if(qty<=0) return;
+    const used=Object.keys(item.per||{}).filter(k=>present.has(k)).map(k=>R[k]&&R[k].title).filter(Boolean);
+    sec(item.sec).items.push({item, qty, used});
+  });
+  return sections;
+}
 function renderGrocery(slot){
-  const groc = CTX[slot].groc;
+  const groc = effectiveGrocery(slot);
   const container = document.getElementById("groceryList"+slot);
   let html="";
-  groc.forEach((section,si)=>{
+  groc.forEach((section)=>{
+    if(!section.items.length) return;
     let subtotal=0;
-    const entries = section.items.map((item,ii)=>{ const id=`${si}-${ii}`, p=priceOf(item); subtotal+=p; return {item,id,p,checked:!!checks[slot][id]}; });
+    const entries = section.items.map((e)=>{ const id=gid(section.sec,e.item.n), p=priceOf(e.item,e.qty); subtotal+=p; return {item:e.item, qty:e.qty, used:e.used, id, p, checked:!!checks[slot][id]}; });
     entries.sort((a,b)=>(a.checked?1:0)-(b.checked?1:0));   // unchecked rise, checked sink
     const rows = entries.map(function(e){
       const ck = e.checked?"checked":"", li = e.checked?"checked":"";
@@ -816,7 +891,7 @@ function renderGrocery(slot){
       const st = storeOf(e.item); const stLabel = st?` · 🏬 ${st}`:"";
       return `<li class="${li}" data-id="${e.id}">
         <input type="checkbox" ${ck} onchange="toggleCheck('${slot}','${e.id}',this)">
-        <label><span class="nm">${e.item.n}${flag}</span><span class="qty">${e.item.q}${stLabel}</span></label>
+        <label><span class="nm">${e.item.n}${flag}</span><span class="qty">${qtyLabel(e)}${stLabel}</span></label>
         <span class="${pc}">${money(e.p)}</span></li>`;
     }).join("");
     html+=`<div class="gsection"><h4>${section.sec}<span class="sub">${money(subtotal)}</span></h4><ul class="glist">${rows}</ul></div>`;
@@ -842,10 +917,10 @@ function renderGrocery(slot){
   updateTotals(slot);
 }
 function updateTotals(slot){
-  const groc=CTX[slot].groc;
+  const groc=effectiveGrocery(slot);
   let total=0, remaining=0, count=0, done=0;
-  groc.forEach((section,si)=>section.items.forEach((item,ii)=>{
-    const id=`${si}-${ii}`, p=priceOf(item); total+=p; count++;
+  groc.forEach((section)=>section.items.forEach((e)=>{
+    const id=gid(section.sec,e.item.n), p=priceOf(e.item,e.qty); total+=p; count++;
     if(checks[slot][id]) done++; else remaining+=p;
   }));
   custom[slot].forEach(item=>{
@@ -972,7 +1047,7 @@ const firebaseConfig = {
   appId: "1:397414816682:web:0e015377f2f207e64a69d3"
 };
 let syncRef=null, applyingRemote=false, myRev=null, pushTimer=null, seq=0;
-let remoteChecksAll={}, remoteCustomAll={};
+let remoteChecksAll={}, remoteCustomAll={}, remoteMealsAll={};
 const DEVICE = (function(){ let d=null; try{d=localStorage.getItem('mp_device');}catch(e){} if(!d){ d='d-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); try{localStorage.setItem('mp_device',d);}catch(e){} } return d; })();
 function setSyncStatus(t){ var el=document.getElementById('syncDot'); if(el) el.innerHTML=t; }
 function syncInit(){
@@ -997,12 +1072,16 @@ function applyRemote(data){
     ensureDefaults();   // fill in any items the remote payload predates (e.g. newly added)
     remoteChecksAll = s.checks||{};
     remoteCustomAll = s.custom||{};
+    remoteMealsAll  = s.meals||{};
     checks.A = remoteChecksAll[CTX.A.key]||{};  checks.B = remoteChecksAll[CTX.B.key]||{};
     custom.A = remoteCustomAll[CTX.A.key]||[];  custom.B = remoteCustomAll[CTX.B.key]||[];
+    mealPlan.A = normalizeMenu(remoteMealsAll[CTX.A.key] || defaultMenu(CTX.A.key));
+    mealPlan.B = normalizeMenu(remoteMealsAll[CTX.B.key] || defaultMenu(CTX.B.key));
     save(LS.staples,staplePrices); save(LS.prices,prices); save(LS.store,storeSel); save(LS.unit,unitSel);
     save(ckChecks(CTX.A.key),checks.A); save(ckChecks(CTX.B.key),checks.B);
     save(ckCustom(CTX.A.key),custom.A); save(ckCustom(CTX.B.key),custom.B);
-    renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B");
+    save(ckMeals(CTX.A.key),mealPlan.A); save(ckMeals(CTX.B.key),mealPlan.B);
+    renderStapleRows(); renderCatalog(); renderOverview(); renderRecipes(); renderGrocery("A"); renderGrocery("B");
     setSyncStatus("🟢 synced");
   } finally { applyingRemote=false; }
 }
@@ -1011,8 +1090,9 @@ function syncPush(){
   if(!syncRef) return;
   remoteChecksAll[CTX.A.key]=checks.A; remoteChecksAll[CTX.B.key]=checks.B;
   remoteCustomAll[CTX.A.key]=custom.A; remoteCustomAll[CTX.B.key]=custom.B;
+  remoteMealsAll[CTX.A.key]=mealPlan.A; remoteMealsAll[CTX.B.key]=mealPlan.B;
   myRev = DEVICE+"-"+(++seq);
-  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll});
+  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll});
   syncRef.set({rev:myRev, updatedAt:Date.now(), state:state}).catch(function(e){ console.warn('sync push failed',e); });
 }
 
