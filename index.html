@@ -78,7 +78,23 @@
   .et-hint{font-size:.78rem;color:var(--muted);flex:1 1 200px;min-width:160px}
   .ov.editing{cursor:default}
   .ov.editing .meal-sel{width:100%;margin-top:7px;border:1px solid var(--line);border-radius:8px;
-    padding:7px 8px;font-size:.86rem;background:#fff;color:var(--ink);font-family:inherit}
+    padding:7px 8px;font-size:.86rem;background:#fff;color:var(--ink);font-family:inherit;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;transition:.15s}
+  .ov.editing .meal-sel:hover{border-color:var(--accentA)}
+  .meal-sel-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .meal-sel-label.ph{color:var(--muted);font-style:italic}
+  .meal-sel-caret{color:var(--muted);font-size:.7rem;flex:none}
+  /* searchable meal picker (custom dropdown) */
+  .meal-picker{position:fixed;z-index:1000;min-width:200px;background:#fff;border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);overflow:hidden}
+  .meal-picker-search{width:100%;box-sizing:border-box;border:none;border-bottom:1px solid var(--line);
+    padding:9px 11px;font-size:.86rem;font-family:inherit;color:var(--ink);outline:none}
+  .meal-picker-list{list-style:none;margin:0;padding:4px;max-height:240px;overflow-y:auto}
+  .meal-picker-list .mp-opt{padding:8px 10px;font-size:.86rem;border-radius:7px;cursor:pointer;line-height:1.2}
+  .meal-picker-list .mp-opt:hover{background:var(--accentA);color:#fff}
+  .meal-picker-list .mp-opt.sel{font-weight:700;color:var(--accentA)}
+  .meal-picker-list .mp-opt.sel:hover{color:#fff}
+  .meal-picker-list .mp-empty{padding:10px;font-size:.82rem;color:var(--muted);font-style:italic;text-align:center}
   .ov-controls{display:flex;gap:5px;margin-top:8px}
   .ov-controls button{flex:1;border:1px solid var(--line);background:#fff;color:var(--ink);
     border-radius:7px;padding:6px 4px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
@@ -317,6 +333,10 @@
   </footer>
 </div>
 <div class="saved-pop" id="savedPop">✓ Saved</div>
+<div id="mealPicker" class="meal-picker" style="display:none">
+  <input id="mealPickerSearch" class="meal-picker-search" type="text" placeholder="🔍 Search meals…" autocomplete="off" oninput="renderMealPickerList(this.value)">
+  <ul id="mealPickerList" class="meal-picker-list"></ul>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -664,11 +684,12 @@ let custom = { A:load(ckCustom(CTX.A.key),[]),  B:load(ckCustom(CTX.B.key),[]) }
 // A cycle's plan is a 14-slot array of recipe keys (or null for an empty day).
 // Stored per period key (like checks/custom) so edits to "up next" carry over
 // automatically when that period rolls in to become the current cycle.
+const LEFTOVERS = "__leftovers__";   // sentinel meal value: a planned "leftovers" night, not a recipe
 function defaultMenu(key){ return datasetForPeriod(key).menu.slice(); }
 function normalizeMenu(arr){
   const a=(arr||[]).slice(0,14);
   while(a.length<14) a.push(null);
-  return a.map(k => (k && R[k]) ? k : null);
+  return a.map(k => (k===LEFTOVERS || (k && R[k])) ? k : null);
 }
 let mealPlan = {
   A: normalizeMenu(load(ckMeals(CTX.A.key), null) || defaultMenu(CTX.A.key)),
@@ -743,23 +764,28 @@ function renderStatus(){
   document.getElementById("recARange").textContent = `· ${fmtShort(CTX.A.start)} – ${fmtShort(CTX.A.end)}`;
   document.getElementById("recBRange").textContent = `· ${fmtShort(CTX.B.start)} – ${fmtShort(CTX.B.end)}`;
 }
-function recipeOptions(sel){
-  return `<option value="">— no meal —</option>`+
-    ALL_RECIPE_KEYS.map(k=>`<option value="${k}" ${sel===k?'selected':''}>${R[k].title}</option>`).join("");
+// Display label for a stored meal value (recipe key, LEFTOVERS, or empty).
+function mealLabel(k){
+  if(k===LEFTOVERS) return "Leftovers";
+  return (k && R[k]) ? R[k].title : "— no meal —";
 }
 function dayCard(slot,i){
   const k=mealPlan[slot][i], d=addDays(CTX[slot].start,i), other=slot==='A'?'B':'A';
   if(editMode){
+    const isSet = !!k;
     return `<div class="ov editing">
       <div class="d">Day ${i+1} · ${fmtFull(d)}</div>
-      <select class="meal-sel" onchange="changeMeal('${slot}',${i},this.value)">${recipeOptions(k)}</select>
+      <button type="button" class="meal-sel" onclick="openMealPicker('${slot}',${i},this)">
+        <span class="meal-sel-label ${isSet?'':'ph'}">${mealLabel(k)}</span><span class="meal-sel-caret">▾</span>
+      </button>
       <div class="ov-controls">
         <button title="Move to earlier day" onclick="moveMeal('${slot}',${i},-1)" ${i===0?'disabled':''}>▲</button>
         <button title="Move to later day" onclick="moveMeal('${slot}',${i},1)" ${i===13?'disabled':''}>▼</button>
-        <button title="Move to Cycle ${other}" onclick="sendOther('${slot}',${i})" ${k?'':'disabled'}>⇄ ${other}</button>
-        <button title="Remove meal" class="rm" onclick="removeMeal('${slot}',${i})" ${k?'':'disabled'}>✕</button>
+        <button title="Move to Cycle ${other}" onclick="sendOther('${slot}',${i})" ${isSet?'':'disabled'}>⇄ ${other}</button>
+        <button title="Remove meal" class="rm" onclick="removeMeal('${slot}',${i})" ${isSet?'':'disabled'}>✕</button>
       </div></div>`;
   }
+  if(k===LEFTOVERS) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">🍲 Leftovers</div></div>`;
   if(!k) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m muted">— no meal —</div></div>`;
   return `<div class="ov" role="button" tabindex="0" onclick="openRecipe('${k}')" onkeypress="if(event.key==='Enter')openRecipe('${k}')"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">${R[k].title}</div><div class="open-hint">View recipe →</div></div>`;
 }
@@ -776,9 +802,9 @@ function renderOverview(){
 }
 function toggleEdit(){ editMode=!editMode; renderOverview(); }
 function changeMeal(slot,i,val){
-  mealPlan[slot][i] = (val && R[val]) ? val : null;
+  mealPlan[slot][i] = (val===LEFTOVERS) ? LEFTOVERS : (val && R[val]) ? val : null;
   saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot);
-  toast(val ? "Meal set" : "Meal cleared");
+  toast(val===LEFTOVERS ? "Set to leftovers" : val ? "Meal set" : "Meal cleared");
 }
 function moveMeal(slot,i,dir){
   const j=i+dir; if(j<0||j>13) return;
@@ -804,6 +830,47 @@ function resetMealPlan(slot){
   saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot); toast("Cycle "+slot+" reset");
 }
 
+/* ---- Searchable meal picker (custom dropdown shared across day cards) ---- */
+let mealPickerCtx=null;   // {slot,i,btn} of the day card currently being edited
+function mealPickerOptions(){
+  return [{v:"",label:"— No Meal —"},{v:LEFTOVERS,label:"Leftovers"}]
+    .concat(ALL_RECIPE_KEYS.map(k=>({v:k,label:R[k].title})));
+}
+function renderMealPickerList(filter){
+  const ul=document.getElementById("mealPickerList"); if(!ul) return;
+  const cur = mealPickerCtx ? (mealPlan[mealPickerCtx.slot][mealPickerCtx.i]||"") : "";
+  const f=(filter||"").trim().toLowerCase();
+  const opts=mealPickerOptions().filter(o=>!f || o.label.toLowerCase().includes(f));
+  if(!opts.length){ ul.innerHTML=`<li class="mp-empty">No matches</li>`; return; }
+  ul.innerHTML=opts.map(o=>`<li class="mp-opt ${o.v===cur?'sel':''}" onmousedown="pickMeal('${o.v}')">${o.label}</li>`).join("");
+}
+function openMealPicker(slot,i,btn){
+  mealPickerCtx={slot,i,btn};
+  const pick=document.getElementById("mealPicker"), inp=document.getElementById("mealPickerSearch");
+  inp.value=""; renderMealPickerList("");
+  pick.style.display="block";
+  const r=btn.getBoundingClientRect();
+  pick.style.width=Math.round(r.width)+"px";
+  pick.style.left=Math.round(r.left)+"px";
+  // flip above the button if it would overflow the bottom of the viewport
+  const below=window.innerHeight-r.bottom;
+  if(below < pick.offsetHeight+8 && r.top > below){ pick.style.top=Math.round(r.top-pick.offsetHeight-4)+"px"; }
+  else { pick.style.top=Math.round(r.bottom+4)+"px"; }
+  setTimeout(()=>inp.focus(),0);
+}
+function closeMealPicker(){ const p=document.getElementById("mealPicker"); if(p) p.style.display="none"; mealPickerCtx=null; }
+function pickMeal(v){ if(!mealPickerCtx) return; const c=mealPickerCtx; changeMeal(c.slot,c.i,v); closeMealPicker(); }
+document.addEventListener("mousedown",function(e){
+  const p=document.getElementById("mealPicker");
+  if(!p || p.style.display!=="block") return;
+  if(p.contains(e.target)) return;
+  if(mealPickerCtx && mealPickerCtx.btn && mealPickerCtx.btn.contains(e.target)) return;
+  closeMealPicker();
+});
+document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeMealPicker(); });
+window.addEventListener("resize",closeMealPicker);
+window.addEventListener("scroll",closeMealPicker,true);
+
 /* ============================ RECIPES ============================ */
 function ingHTML(groups){
   return groups.map(g=>{
@@ -827,6 +894,7 @@ function recipeCard(k,dayNo,date){
 function recipesHTML(slot){
   return mealPlan[slot].map((k,i)=>{
     const date=addDays(CTX[slot].start,i);
+    if(k===LEFTOVERS) return `<article class="recipe empty"><span class="day-tag">Day ${i+1} · ${fmt(date)}</span><h3 class="muted">🍲 Leftovers</h3></article>`;
     if(!k) return `<article class="recipe empty"><span class="day-tag">Day ${i+1} · ${fmt(date)}</span><h3 class="muted">No dinner planned</h3></article>`;
     return recipeCard(k,i+1,date);
   }).join("");
