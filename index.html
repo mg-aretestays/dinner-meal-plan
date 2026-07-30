@@ -1237,6 +1237,7 @@ function applyRemote(data){
     remoteChecksAll = s.checks||{};
     remoteCustomAll = s.custom||{};
     remoteMealsAll  = s.meals||{};
+    recipeEdits = s.recipeEdits||{};
     checks.A = remoteChecksAll[CTX.A.key]||{};  checks.B = remoteChecksAll[CTX.B.key]||{};
     custom.A = remoteCustomAll[CTX.A.key]||[];  custom.B = remoteCustomAll[CTX.B.key]||[];
     mealPlan.A = normalizeMenu(remoteMealsAll[CTX.A.key] || defaultMenu(CTX.A.key));
@@ -1245,6 +1246,7 @@ function applyRemote(data){
     save(ckChecks(CTX.A.key),checks.A); save(ckChecks(CTX.B.key),checks.B);
     save(ckCustom(CTX.A.key),custom.A); save(ckCustom(CTX.B.key),custom.B);
     save(ckMeals(CTX.A.key),mealPlan.A); save(ckMeals(CTX.B.key),mealPlan.B);
+    saveRecipeEdits();
     renderStapleRows(); renderCatalog(); renderOverview(); renderRecipes(); renderGrocery("A"); renderGrocery("B");
     setSyncStatus("🟢 synced");
   } finally { applyingRemote=false; }
@@ -1256,7 +1258,7 @@ function syncPush(){
   remoteCustomAll[CTX.A.key]=custom.A; remoteCustomAll[CTX.B.key]=custom.B;
   remoteMealsAll[CTX.A.key]=mealPlan.A; remoteMealsAll[CTX.B.key]=mealPlan.B;
   myRev = DEVICE+"-"+(++seq);
-  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll});
+  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, recipeEdits:recipeEdits});
   syncRef.set({rev:myRev, updatedAt:Date.now(), state:state}).catch(function(e){ console.warn('sync push failed',e); });
 }
 
