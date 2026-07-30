@@ -101,6 +101,14 @@
   .ov-controls button:hover:not(:disabled){border-color:var(--accentA);color:var(--accentA)}
   .ov-controls button.rm:hover:not(:disabled){border-color:var(--warn);color:var(--warn)}
   .ov-controls button:disabled{opacity:.35;cursor:not-allowed}
+  .scale-row{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .scale-row .slab{font-size:.72rem;color:var(--muted);font-weight:600}
+  .scale-btns{display:flex;gap:4px}
+  .scale-btns button{border:1px solid var(--line);background:#fff;color:var(--ink);
+    border-radius:6px;padding:4px 9px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+  .scale-btns button:hover{border-color:var(--accentA)}
+  .scale-btns button.sel{background:var(--accentA);color:#fff;border-color:var(--accentA)}
+  .cycleB .scale-btns button.sel{background:var(--accentB);border-color:var(--accentB)}
 
   .recipe{background:var(--card);border:1px solid var(--line);border-radius:16px;
     padding:18px 18px;margin:14px 0;box-shadow:var(--shadow)}
@@ -799,6 +807,11 @@ function dayCard(slot,i){
   const k=mealPlan[slot][i], d=addDays(CTX[slot].start,i), other=slot==='A'?'B':'A';
   if(editMode){
     const isSet = !!k;
+    const canScale = isSet && k!==LEFTOVERS;
+    const scale = mealScale[slot][i];
+    const scaleRow = canScale ? `<div class="scale-row"><span class="slab">Servings</span><div class="scale-btns">${
+      SCALE_OPTIONS.map(v=>`<button class="${scale===v?'sel':''}" onclick="setScale('${slot}',${i},${v})">${v}x</button>`).join("")
+    }</div></div>` : "";
     return `<div class="ov editing">
       <div class="d">Day ${i+1} · ${fmtFull(d)}</div>
       <button type="button" class="meal-sel" onclick="openMealPicker('${slot}',${i},this)">
@@ -809,7 +822,7 @@ function dayCard(slot,i){
         <button title="Move to later day" onclick="moveMeal('${slot}',${i},1)" ${i===13?'disabled':''}>▼</button>
         <button title="Move to Cycle ${other}" onclick="sendOther('${slot}',${i})" ${isSet?'':'disabled'}>⇄ ${other}</button>
         <button title="Remove meal" class="rm" onclick="removeMeal('${slot}',${i})" ${isSet?'':'disabled'}>✕</button>
-      </div></div>`;
+      </div>${scaleRow}</div>`;
   }
   if(k===LEFTOVERS) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">🍲 Leftovers</div></div>`;
   if(!k) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m muted">— no meal —</div></div>`;
