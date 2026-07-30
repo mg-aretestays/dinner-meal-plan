@@ -869,7 +869,11 @@ document.addEventListener("mousedown",function(e){
 });
 document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeMealPicker(); });
 window.addEventListener("resize",closeMealPicker);
-window.addEventListener("scroll",closeMealPicker,true);
+window.addEventListener("scroll",function(e){
+  const p=document.getElementById("mealPicker");
+  if(p && p.style.display==="block" && p.contains(e.target)) return;
+  closeMealPicker();
+},true);
 
 /* ============================ RECIPES ============================ */
 function ingHTML(groups){
