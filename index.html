@@ -927,10 +927,11 @@ function resetRecipeEdit(k){
   renderRecipes();
   toast("Reset to original");
 }
+function escHTML(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function ingHTML(groups){
   return groups.map(g=>{
-    const head = g[0] ? `<div class="sub-h">${g[0]}</div>` : "";
-    return head+`<ul class="ing-list">${g.slice(1).map(x=>`<li>${x}</li>`).join("")}</ul>`;
+    const head = g[0] ? `<div class="sub-h">${escHTML(g[0])}</div>` : "";
+    return head+`<ul class="ing-list">${g.slice(1).map(x=>`<li>${escHTML(x)}</li>`).join("")}</ul>`;
   }).join("");
 }
 function recipeCard(k,dayNo,date){
@@ -943,7 +944,7 @@ function recipeCard(k,dayNo,date){
     <div class="meta">Serves ${r.serves} · Source: ${link}</div>
     <div class="cols">
       <div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
-      <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${s}</li>`).join("")}</ol>${note}</div>
+      <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div>
     </div></article>`;
 }
 function recipesHTML(slot){
@@ -1168,7 +1169,7 @@ function showRecipeDetail(k){
          <div class="meta">Serves ${r.serves} · Source: ${link}</div>
          <button class="btn-edit" style="margin:8px 0" onclick="editRecipe('${k}')">✏️ Edit ingredients & steps</button>
          <div class="cols"><div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
-         <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${s}</li>`).join("")}</ol>${note}</div></div>
+         <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div></div>
        </article>`;
   }
   document.getElementById("recipeIndex").style.display="none";
@@ -1184,6 +1185,7 @@ function openRecipe(k){
   var tb=document.querySelector('#tabs button[data-t="recipes"]'); if(tb) tb.classList.add("active");
   document.querySelectorAll("section.panel").forEach(p=>p.classList.remove("active"));
   document.getElementById("recipes").classList.add("active");
+  recipeEditKey=null;
   showRecipeDetail(k);
 }
 
