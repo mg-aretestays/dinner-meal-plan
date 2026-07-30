@@ -826,7 +826,7 @@ function dayCard(slot,i){
   }
   if(k===LEFTOVERS) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">🍲 Leftovers</div></div>`;
   if(!k) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m muted">— no meal —</div></div>`;
-  return `<div class="ov" role="button" tabindex="0" onclick="openRecipe('${k}')" onkeypress="if(event.key==='Enter')openRecipe('${k}')"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">${R[k].title}</div><div class="open-hint">View recipe →</div></div>`;
+  return `<div class="ov" role="button" tabindex="0" onclick="openRecipe('${k}','${slot}',${i})" onkeypress="if(event.key==='Enter')openRecipe('${k}','${slot}',${i})"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">${R[k].title}</div><div class="open-hint">View recipe →</div></div>`;
 }
 function renderOverview(){
   const mk=(slot,from,to)=>{ let s=""; for(let i=from;i<to;i++) s+=dayCard(slot,i); return s; };
@@ -972,14 +972,16 @@ function ingHTML(groups){
     return head+`<ul class="ing-list">${g.slice(1).map(x=>`<li>${escHTML(x)}</li>`).join("")}</ul>`;
   }).join("");
 }
-function recipeCard(k,dayNo,date){
+function recipeCard(k,dayNo,date,scale){
   const r=R[k], rd=recipeData(k);
   const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : r.src;
   const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
+  const scaleNote = (scale && scale!==1) ? `<div class="note-box">👥 ${scale}x tonight — grocery list already adjusted.</div>` : "";
   return `<article class="recipe">
     <span class="day-tag">Day ${dayNo} · ${fmt(date)}</span>
     <h3>${r.title}</h3>
     <div class="meta">Serves ${r.serves} · Source: ${link}</div>
+    ${scaleNote}
     <div class="cols">
       <div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
       <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div>
@@ -990,7 +992,7 @@ function recipesHTML(slot){
     const date=addDays(CTX[slot].start,i);
     if(k===LEFTOVERS) return `<article class="recipe empty"><span class="day-tag">Day ${i+1} · ${fmt(date)}</span><h3 class="muted">🍲 Leftovers</h3></article>`;
     if(!k) return `<article class="recipe empty"><span class="day-tag">Day ${i+1} · ${fmt(date)}</span><h3 class="muted">No dinner planned</h3></article>`;
-    return recipeCard(k,i+1,date);
+    return recipeCard(k,i+1,date,mealScale[slot][i]);
   }).join("");
 }
 function renderRecipes(){
@@ -1174,10 +1176,12 @@ function renderAllRecipes(){
       `<button class="ri-card" onclick="showRecipeDetail('${k}')"><span class="ri-title">${R[k].title}</span><span class="ri-meta">Serves ${R[k].serves} · ${R[k].src}</span></button>`
     ).join("")+`</div>`;
 }
-function showRecipeDetail(k){
+function showRecipeDetail(k,scale){
+  scale = scale||1;
   const r=R[k];
   const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : r.src;
   const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
+  const scaleNote = (scale!==1) ? `<div class="note-box">👥 ${scale}x tonight — grocery list already adjusted.</div>` : "";
   if(recipeEditKey===k){
     const rd=recipeData(k);
     document.getElementById("recipeDetail").innerHTML =
@@ -1208,6 +1212,7 @@ function showRecipeDetail(k){
        <article class="recipe">
          <h3>${r.title}</h3>
          <div class="meta">Serves ${r.serves} · Source: ${link}</div>
+         ${scaleNote}
          <button class="btn-edit" style="margin:8px 0" onclick="editRecipe('${k}')">✏️ Edit ingredients & steps</button>
          <div class="cols"><div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
          <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div></div>
@@ -1221,13 +1226,14 @@ function hideRecipeDetail(){
   document.getElementById("recipeDetail").style.display="none";
   document.getElementById("recipeIndex").style.display="block";
 }
-function openRecipe(k){
+function openRecipe(k,slot,i){
   document.querySelectorAll("#tabs button").forEach(x=>x.classList.remove("active"));
   var tb=document.querySelector('#tabs button[data-t="recipes"]'); if(tb) tb.classList.add("active");
   document.querySelectorAll("section.panel").forEach(p=>p.classList.remove("active"));
   document.getElementById("recipes").classList.add("active");
   recipeEditKey=null;
-  showRecipeDetail(k);
+  const scale = (slot!=null && i!=null) ? mealScale[slot][i] : 1;
+  showRecipeDetail(k, scale);
 }
 
 /* ============================ MISC ============================ */
