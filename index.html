@@ -1059,7 +1059,7 @@ function customRowHTML(slot, e){
   const ck = e.checked?"checked":"", li = e.checked?"checked":"";
   return `<li class="${li}" data-id="${id}">
     <input type="checkbox" ${ck} onchange="toggleCheck('${slot}','${id}',this)">
-    <label><span class="nm">${item.n}</span><span class="qty">${item.q||"added by you"}</span></label>
+    <label><span class="nm">${escHTML(item.n)}</span><span class="qty">${escHTML(item.q)||"added by you"}</span></label>
     <input class="cust-price-in" type="number" step="0.01" min="0" value="${(item.price||0).toFixed(2)}"
       onchange="editCustomPrice('${slot}','${item.id}',this.value)">
     <button class="remove-x" title="Remove" onclick="removeCustom('${slot}','${item.id}')">✕</button></li>`;
