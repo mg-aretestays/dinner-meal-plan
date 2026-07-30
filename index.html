@@ -681,6 +681,7 @@ const LS = { staples:"mp_staples_v3", prices:"mp_prices_v3", store:"mp_store_v3"
 const ckChecks = p => "mp_checks_"+p;
 const ckCustom = p => "mp_custom_"+p;
 const ckMeals  = p => "mp_meals_"+p;
+const ckScale  = p => "mp_scale_"+p;
 function load(key,fb){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fb; }catch(e){ return fb; } }
 function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch(e){} scheduleSyncPush(); }
 let checks = { A:load(ckChecks(CTX.A.key),{}), B:load(ckChecks(CTX.B.key),{}) };
@@ -703,6 +704,25 @@ let mealPlan = {
 };
 let editMode = false;
 function saveMeals(slot){ save(ckMeals(CTX[slot].key), mealPlan[slot]); }
+
+const SCALE_OPTIONS = [1, 1.5, 2, 3];
+function normalizeScale(arr){
+  const a=(arr||[]).slice(0,14);
+  while(a.length<14) a.push(1);
+  return a.map(v => SCALE_OPTIONS.indexOf(v)>=0 ? v : 1);
+}
+let mealScale = {
+  A: normalizeScale(load(ckScale(CTX.A.key), null)),
+  B: normalizeScale(load(ckScale(CTX.B.key), null))
+};
+function saveScale(slot){ save(ckScale(CTX[slot].key), mealScale[slot]); }
+function setScale(slot,i,val){
+  if(SCALE_OPTIONS.indexOf(val)<0) return;
+  mealScale[slot][i]=val;
+  saveScale(slot);
+  renderOverview(); renderRecipes(); renderGrocery(slot);
+  toast(val===1 ? "Servings reset to 1x" : "Scaled to "+val+"x");
+}
 
 /* ============================ PRICE CATALOG ============================ */
 let CATALOG = []; // [{sec, items:[{n, def}]}] non-staple price-editable items
@@ -809,17 +829,20 @@ function renderOverview(){
 function toggleEdit(){ editMode=!editMode; renderOverview(); }
 function changeMeal(slot,i,val){
   mealPlan[slot][i] = (val===LEFTOVERS) ? LEFTOVERS : (val && R[val]) ? val : null;
+  mealScale[slot][i] = 1; saveScale(slot);
   saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot);
   toast(val===LEFTOVERS ? "Set to leftovers" : val ? "Meal set" : "Meal cleared");
 }
 function moveMeal(slot,i,dir){
   const j=i+dir; if(j<0||j>13) return;
   const a=mealPlan[slot], t=a[i]; a[i]=a[j]; a[j]=t;
-  saveMeals(slot); renderOverview(); renderRecipes(); toast("Moved");
+  const sc=mealScale[slot], ts=sc[i]; sc[i]=sc[j]; sc[j]=ts;
+  saveMeals(slot); saveScale(slot); renderOverview(); renderRecipes(); toast("Moved");
 }
 function removeMeal(slot,i){
   if(!mealPlan[slot][i]) return;
   mealPlan[slot][i]=null;
+  mealScale[slot][i]=1; saveScale(slot);
   saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot); toast("Meal removed");
 }
 function sendOther(slot,i){
@@ -827,13 +850,15 @@ function sendOther(slot,i){
   const other=slot==='A'?'B':'A', dest=mealPlan[other].indexOf(null);
   if(dest<0){ toast("Cycle "+other+" has no empty day — remove one there first"); return; }
   mealPlan[other][dest]=k; mealPlan[slot][i]=null;
-  saveMeals(slot); saveMeals(other);
+  mealScale[other][dest]=mealScale[slot][i]; mealScale[slot][i]=1;
+  saveMeals(slot); saveMeals(other); saveScale(slot); saveScale(other);
   renderOverview(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
   toast("Moved to Cycle "+other+", Day "+(dest+1));
 }
 function resetMealPlan(slot){
   mealPlan[slot]=defaultMenu(CTX[slot].key);
-  saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot); toast("Cycle "+slot+" reset");
+  mealScale[slot]=new Array(14).fill(1);
+  saveMeals(slot); saveScale(slot); renderOverview(); renderRecipes(); renderGrocery(slot); toast("Cycle "+slot+" reset");
 }
 
 /* ---- Searchable meal picker (custom dropdown shared across day cards) ---- */
