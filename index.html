@@ -1260,7 +1260,7 @@ const firebaseConfig = {
   appId: "1:397414816682:web:0e015377f2f207e64a69d3"
 };
 let syncRef=null, applyingRemote=false, myRev=null, pushTimer=null, seq=0;
-let remoteChecksAll={}, remoteCustomAll={}, remoteMealsAll={};
+let remoteChecksAll={}, remoteCustomAll={}, remoteMealsAll={}, remoteScaleAll={};
 const DEVICE = (function(){ let d=null; try{d=localStorage.getItem('mp_device');}catch(e){} if(!d){ d='d-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); try{localStorage.setItem('mp_device',d);}catch(e){} } return d; })();
 function setSyncStatus(t){ var el=document.getElementById('syncDot'); if(el) el.innerHTML=t; }
 function syncInit(){
@@ -1286,15 +1286,19 @@ function applyRemote(data){
     remoteChecksAll = s.checks||{};
     remoteCustomAll = s.custom||{};
     remoteMealsAll  = s.meals||{};
+    remoteScaleAll  = s.mealScale||{};
     recipeEdits = s.recipeEdits||{};
     checks.A = remoteChecksAll[CTX.A.key]||{};  checks.B = remoteChecksAll[CTX.B.key]||{};
     custom.A = remoteCustomAll[CTX.A.key]||[];  custom.B = remoteCustomAll[CTX.B.key]||[];
     mealPlan.A = normalizeMenu(remoteMealsAll[CTX.A.key] || defaultMenu(CTX.A.key));
     mealPlan.B = normalizeMenu(remoteMealsAll[CTX.B.key] || defaultMenu(CTX.B.key));
+    mealScale.A = normalizeScale(remoteScaleAll[CTX.A.key]);
+    mealScale.B = normalizeScale(remoteScaleAll[CTX.B.key]);
     save(LS.staples,staplePrices); save(LS.prices,prices); save(LS.store,storeSel); save(LS.unit,unitSel);
     save(ckChecks(CTX.A.key),checks.A); save(ckChecks(CTX.B.key),checks.B);
     save(ckCustom(CTX.A.key),custom.A); save(ckCustom(CTX.B.key),custom.B);
     save(ckMeals(CTX.A.key),mealPlan.A); save(ckMeals(CTX.B.key),mealPlan.B);
+    save(ckScale(CTX.A.key),mealScale.A); save(ckScale(CTX.B.key),mealScale.B);
     saveRecipeEdits();
     renderStapleRows(); renderCatalog(); renderOverview(); renderRecipes(); renderGrocery("A"); renderGrocery("B");
     setSyncStatus("🟢 synced");
@@ -1306,8 +1310,9 @@ function syncPush(){
   remoteChecksAll[CTX.A.key]=checks.A; remoteChecksAll[CTX.B.key]=checks.B;
   remoteCustomAll[CTX.A.key]=custom.A; remoteCustomAll[CTX.B.key]=custom.B;
   remoteMealsAll[CTX.A.key]=mealPlan.A; remoteMealsAll[CTX.B.key]=mealPlan.B;
+  remoteScaleAll[CTX.A.key]=mealScale.A; remoteScaleAll[CTX.B.key]=mealScale.B;
   myRev = DEVICE+"-"+(++seq);
-  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, recipeEdits:recipeEdits});
+  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, mealScale:remoteScaleAll, recipeEdits:recipeEdits});
   syncRef.set({rev:myRev, updatedAt:Date.now(), state:state}).catch(function(e){ console.warn('sync push failed',e); });
 }
 
