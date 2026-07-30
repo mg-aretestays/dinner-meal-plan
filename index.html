@@ -928,6 +928,7 @@ function recipeData(k){
   return Object.assign({}, base, { ing: edit.ing || base.ing, steps: edit.steps || base.steps });
 }
 let recipeEditKey = null;   // recipe key currently in edit mode on the detail page, or null
+let recipeDetailScale = 1;   // last-rendered scale for the recipe currently open in read mode
 function ingredientsToText(groups){
   return groups.map(g=>{
     const head = g[0] ? `## ${g[0]}\n` : "";
@@ -946,14 +947,14 @@ function parseIngredients(text){
 function parseSteps(text){
   return text.split("\n").map(s=>s.trim()).filter(Boolean);
 }
-function editRecipe(k){ recipeEditKey=k; showRecipeDetail(k); }
-function cancelRecipeEdit(k){ recipeEditKey=null; showRecipeDetail(k); }
+function editRecipe(k){ recipeEditKey=k; showRecipeDetail(k, recipeDetailScale); }
+function cancelRecipeEdit(k){ recipeEditKey=null; showRecipeDetail(k, recipeDetailScale); }
 function saveRecipeEdit(k){
   const ingBox=document.getElementById('recipeEditIng'), stepBox=document.getElementById('recipeEditSteps');
   recipeEdits[k] = { ing: parseIngredients(ingBox.value), steps: parseSteps(stepBox.value) };
   saveRecipeEdits();
   recipeEditKey=null;
-  showRecipeDetail(k);
+  showRecipeDetail(k, recipeDetailScale);
   renderRecipes();
   toast("Recipe saved");
 }
@@ -961,7 +962,7 @@ function resetRecipeEdit(k){
   delete recipeEdits[k];
   saveRecipeEdits();
   recipeEditKey=null;
-  showRecipeDetail(k);
+  showRecipeDetail(k, recipeDetailScale);
   renderRecipes();
   toast("Reset to original");
 }
@@ -1206,6 +1207,7 @@ function showRecipeDetail(k,scale){
          </div>
        </article>`;
   } else {
+    recipeDetailScale = scale;
     const rd=recipeData(k);
     document.getElementById("recipeDetail").innerHTML =
       `<button class="btn-reset" style="margin-bottom:12px" onclick="hideRecipeDetail()">← All recipes</button>
