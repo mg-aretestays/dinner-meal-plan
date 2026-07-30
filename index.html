@@ -877,6 +877,13 @@ window.addEventListener("scroll",function(e){
 },true);
 
 /* ============================ RECIPES ============================ */
+let recipeEdits = load('mp_recipeEdits_v1', {});   // { [recipeKey]: {ing, steps} } — user overrides, layered on top of R
+function saveRecipeEdits(){ save('mp_recipeEdits_v1', recipeEdits); }
+function recipeData(k){
+  const base=R[k], edit=recipeEdits[k];
+  if(!edit) return base;
+  return Object.assign({}, base, { ing: edit.ing || base.ing, steps: edit.steps || base.steps });
+}
 function ingHTML(groups){
   return groups.map(g=>{
     const head = g[0] ? `<div class="sub-h">${g[0]}</div>` : "";
@@ -884,7 +891,7 @@ function ingHTML(groups){
   }).join("");
 }
 function recipeCard(k,dayNo,date){
-  const r=R[k];
+  const r=R[k], rd=recipeData(k);
   const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : r.src;
   const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
   return `<article class="recipe">
@@ -892,8 +899,8 @@ function recipeCard(k,dayNo,date){
     <h3>${r.title}</h3>
     <div class="meta">Serves ${r.serves} · Source: ${link}</div>
     <div class="cols">
-      <div><h4>Ingredients</h4>${ingHTML(r.ing)}</div>
-      <div><h4>Instructions</h4><ol class="steps">${r.steps.map(s=>`<li>${s}</li>`).join("")}</ol>${note}</div>
+      <div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
+      <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${s}</li>`).join("")}</ol>${note}</div>
     </div></article>`;
 }
 function recipesHTML(slot){
