@@ -1004,10 +1004,10 @@ function gid(sec,name){ return slug(sec)+"__"+slug(name); }   // stable id, inde
 // How many purchase units this cycle needs of an item: sum the per-recipe
 // amounts for the meals actually planned, then round UP to whole packages
 // (meat/divisible items keep a fractional weight, rounded up to the nearest 0.5).
-function qtyOf(item,present){
+function qtyOf(item,occurrences){
   if(item.always) return 1;
   let q=0; const per=item.per||{};
-  for(const k in per){ if(present.has(k)) q+=per[k]; }
+  occurrences.forEach(o=>{ if(per[o.key]!=null) q+=per[o.key]*o.scale; });
   if(q<=0) return 0;
   return item.divisible ? Math.ceil(q*2)/2 : Math.ceil(q-1e-9);
 }
@@ -1024,15 +1024,17 @@ function qtyLabel(e){
   const used = (e.used&&e.used.length) ? " — "+e.used.join(", ") : "";
   return `${fmtQty(e.qty)} ${unitLabel(e.item.unit,e.qty)}${used}`;
 }
-// Build the cycle's grocery list straight from its planned meals.
+// Build the cycle's grocery list from its planned meals, honoring each night's serving scale.
 function effectiveGrocery(slot){
-  const present=new Set((mealPlan[slot]||[]).filter(Boolean));
+  const occurrences=(mealPlan[slot]||[])
+    .map((k,i)=> (k && k!==LEFTOVERS) ? {key:k, scale:(mealScale[slot][i]||1)} : null)
+    .filter(Boolean);
   const sections=[], idx={};
   function sec(name){ if(idx[name]==null){ idx[name]=sections.length; sections.push({sec:name,items:[]}); } return sections[idx[name]]; }
   GITEMS.forEach(item=>{
-    const qty=qtyOf(item,present);
+    const qty=qtyOf(item,occurrences);
     if(qty<=0) return;
-    const used=Object.keys(item.per||{}).filter(k=>present.has(k)).map(k=>R[k]&&R[k].title).filter(Boolean);
+    const used=occurrences.filter(o=>item.per && item.per[o.key]!=null).map(o=>R[o.key]&&R[o.key].title).filter(Boolean);
     sec(item.sec).items.push({item, qty, used});
   });
   return sections;
