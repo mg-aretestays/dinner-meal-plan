@@ -1146,11 +1146,11 @@ function showRecipeDetail(k){
          <div class="meta">Serves ${r.serves} · Source: ${link}</div>
          <div class="cols">
            <div><h4>Ingredients</h4>
-             <textarea id="recipeEditIng" class="recipe-edit-box" rows="12">${ingredientsToText(rd.ing)}</textarea>
+             <textarea id="recipeEditIng" class="recipe-edit-box" rows="12">${escHTML(ingredientsToText(rd.ing))}</textarea>
              <div class="edit-hint">Start a line with "## " for a section heading (e.g. "## Marinade").</div>
            </div>
            <div><h4>Instructions</h4>
-             <textarea id="recipeEditSteps" class="recipe-edit-box" rows="12">${rd.steps.join("\n")}</textarea>
+             <textarea id="recipeEditSteps" class="recipe-edit-box" rows="12">${escHTML(rd.steps.join("\n"))}</textarea>
              <div class="edit-hint">One step per line.</div>
            </div>
          </div>
