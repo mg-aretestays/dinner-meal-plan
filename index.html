@@ -1025,6 +1025,7 @@ function qtyLabel(e){
   return `${fmtQty(e.qty)} ${unitLabel(e.item.unit,e.qty)}${used}`;
 }
 // Build the cycle's grocery list from its planned meals, honoring each night's serving scale.
+// Each occurrence of a recipe counts separately, even if the same recipe appears on two different nights.
 function effectiveGrocery(slot){
   const occurrences=(mealPlan[slot]||[])
     .map((k,i)=> (k && k!==LEFTOVERS) ? {key:k, scale:(mealScale[slot][i]||1)} : null)
@@ -1034,7 +1035,7 @@ function effectiveGrocery(slot){
   GITEMS.forEach(item=>{
     const qty=qtyOf(item,occurrences);
     if(qty<=0) return;
-    const used=occurrences.filter(o=>item.per && item.per[o.key]!=null).map(o=>R[o.key]&&R[o.key].title).filter(Boolean);
+    const used=[...new Set(occurrences.filter(o=>item.per && item.per[o.key]!=null).map(o=>o.key))].map(k=>R[k]&&R[k].title).filter(Boolean);
     sec(item.sec).items.push({item, qty, used});
   });
   return sections;
