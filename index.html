@@ -1230,50 +1230,11 @@ function recipeData(k){
   if(!edit) return base;
   return Object.assign({}, base, { ing: edit.ing || base.ing, steps: edit.steps || base.steps });
 }
-let recipeEditKey = null;   // recipe key currently in edit mode on the detail page, or null
-let recipeDetailScale = 1;   // last-rendered scale for the recipe currently open in read mode
-function ingredientsToText(groups){
-  return groups.map(g=>{
-    const head = g[0] ? `## ${g[0]}\n` : "";
-    return head + g.slice(1).join("\n");
-  }).join("\n\n");
-}
-function parseIngredients(text){
-  const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
-  const groups = []; let current = null;
-  lines.forEach(line=>{
-    if(line.startsWith("## ")){ current=[line.slice(3).trim()]; groups.push(current); }
-    else { if(!current){ current=[""]; groups.push(current); } current.push(line); }
-  });
-  return groups.length ? groups : [[""]];
-}
-function parseSteps(text){
-  return text.split("\n").map(s=>s.trim()).filter(Boolean);
-}
-function editRecipe(k){ recipeEditKey=k; showRecipeDetail(k, recipeDetailScale); }
-function cancelRecipeEdit(k){ recipeEditKey=null; showRecipeDetail(k, recipeDetailScale); }
-function saveRecipeEdit(k){
-  const ingBox=document.getElementById('recipeEditIng'), stepBox=document.getElementById('recipeEditSteps');
-  recipeEdits[k] = { ing: parseIngredients(ingBox.value), steps: parseSteps(stepBox.value) };
-  saveRecipeEdits();
-  recipeEditKey=null;
-  showRecipeDetail(k, recipeDetailScale);
-  renderRecipes();
-  toast("Recipe saved");
-}
-function resetRecipeEdit(k){
-  delete recipeEdits[k];
-  saveRecipeEdits();
-  recipeEditKey=null;
-  showRecipeDetail(k, recipeDetailScale);
-  renderRecipes();
-  toast("Reset to original");
-}
 function escHTML(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function ingHTML(groups){
   return groups.map(g=>{
-    const head = g[0] ? `<div class="sub-h">${escHTML(g[0])}</div>` : "";
-    return head+`<ul class="ing-list">${g.slice(1).map(x=>`<li>${escHTML(x)}</li>`).join("")}</ul>`;
+    const head = g.heading ? `<div class="sub-h">${escHTML(g.heading)}</div>` : "";
+    return head+`<ul class="ing-list">${g.rows.map(r=>`<li>${escHTML(r.text)}</li>`).join("")}</ul>`;
   }).join("");
 }
 function recipeCard(k,dayNo,date,scale){
@@ -1487,44 +1448,16 @@ function showRecipeDetail(k,scale){
   const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : r.src;
   const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
   const scaleNote = (scale!==1) ? `<div class="note-box">👥 ${scale}x tonight — grocery list already adjusted.</div>` : "";
-  if(recipeEditKey===k){
-    const rd=recipeData(k);
-    document.getElementById("recipeDetail").innerHTML =
-      `<button class="btn-reset" style="margin-bottom:12px" onclick="cancelRecipeEdit('${k}')">← Cancel</button>
-       <article class="recipe">
-         <h3>${r.title}</h3>
-         <div class="meta">Serves ${r.serves} · Source: ${link}</div>
-         ${scaleNote}
-         <div class="cols">
-           <div><h4>Ingredients</h4>
-             <textarea id="recipeEditIng" class="recipe-edit-box" rows="12">${escHTML(ingredientsToText(rd.ing))}</textarea>
-             <div class="edit-hint">Start a line with "## " for a section heading (e.g. "## Marinade").</div>
-           </div>
-           <div><h4>Instructions</h4>
-             <textarea id="recipeEditSteps" class="recipe-edit-box" rows="12">${escHTML(rd.steps.join("\n"))}</textarea>
-             <div class="edit-hint">One step per line.</div>
-           </div>
-         </div>
-         <div class="recipe-edit-actions">
-           <button class="btn-edit" onclick="saveRecipeEdit('${k}')">💾 Save</button>
-           <button class="btn-reset" onclick="cancelRecipeEdit('${k}')">Cancel</button>
-           ${recipeEdits[k] ? `<button class="btn-reset" onclick="resetRecipeEdit('${k}')">↺ Reset to original</button>` : ""}
-         </div>
-       </article>`;
-  } else {
-    recipeDetailScale = scale;
-    const rd=recipeData(k);
-    document.getElementById("recipeDetail").innerHTML =
-      `<button class="btn-reset" style="margin-bottom:12px" onclick="hideRecipeDetail()">← All recipes</button>
-       <article class="recipe">
-         <h3>${r.title}</h3>
-         <div class="meta">Serves ${r.serves} · Source: ${link}</div>
-         ${scaleNote}
-         <button class="btn-edit" style="margin:8px 0" onclick="editRecipe('${k}')">✏️ Edit ingredients & steps</button>
-         <div class="cols"><div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
-         <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div></div>
-       </article>`;
-  }
+  const rd=recipeData(k);
+  document.getElementById("recipeDetail").innerHTML =
+    `<button class="btn-reset" style="margin-bottom:12px" onclick="hideRecipeDetail()">← All recipes</button>
+     <article class="recipe">
+       <h3>${r.title}</h3>
+       <div class="meta">Serves ${r.serves} · Source: ${link}</div>
+       ${scaleNote}
+       <div class="cols"><div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
+       <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div></div>
+     </article>`;
   document.getElementById("recipeIndex").style.display="none";
   document.getElementById("recipeDetail").style.display="block";
   window.scrollTo({top:0,behavior:"smooth"});
@@ -1538,7 +1471,6 @@ function openRecipe(k,slot,i){
   var tb=document.querySelector('#tabs button[data-t="recipes"]'); if(tb) tb.classList.add("active");
   document.querySelectorAll("section.panel").forEach(p=>p.classList.remove("active"));
   document.getElementById("recipes").classList.add("active");
-  recipeEditKey=null;
   const scale = (slot!=null && i!=null) ? mealScale[slot][i] : 1;
   showRecipeDetail(k, scale);
 }
