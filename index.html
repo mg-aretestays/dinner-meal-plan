@@ -1222,8 +1222,6 @@ function purgeStaleRecipeEdits(){
     if(groups && groups.length && Array.isArray(groups[0])) delete recipeEdits[k];
   });
 }
-purgeStaleRecipeEdits();
-saveRecipeEdits();
 function saveRecipeEdits(){ save('mp_recipeEdits_v1', recipeEdits); }
 function recipeData(k){
   const base=R[k], edit=recipeEdits[k];
@@ -1555,6 +1553,8 @@ function syncPush(){
 }
 
 /* ============================ INIT ============================ */
+purgeStaleRecipeEdits();
+saveRecipeEdits();
 buildCatalog();
 initPrices();
 renderStatus();
