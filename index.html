@@ -313,13 +313,13 @@
 
   <section class="panel" id="prices">
     <h2 class="section-title">Price Editor</h2>
-    <p class="lead">Set the real price of <strong>every item</strong>, per store. Each row has a <strong>Unit</strong> and a <strong>Store</strong> dropdown — pick a store and the price you enter is remembered for that store, so you can compare a whole cycle at Costco vs Kroger vs Aldi vs Publix. The selected store's price feeds the cycle totals. Staples are priced per unit (one change updates every recipe that uses them). All edits save in this browser.</p>
+    <p class="lead">Set the real price of <strong>every item</strong>, per store. Each row has a <strong>Unit</strong> and a <strong>Store</strong> dropdown — pick a store and the price you enter is remembered for that store, so you can compare a whole cycle at Costco vs Kroger vs Aldi vs Publix vs Walmart. The selected store's price feeds the cycle totals. Staples are priced per unit (one change updates every recipe that uses them). All edits save in this browser.</p>
     <div class="staple-card quick-compare">
       <strong style="font-size:.92rem">⚡ Quick compare</strong>
       <span style="font-size:.85rem;color:var(--muted)">set every item to one store →</span>
       <select class="mini-sel" style="max-width:150px" onchange="setAllStores(this.value)">
         <option value="" selected disabled>Choose store…</option>
-        <option>Costco</option><option>Kroger</option><option>Aldi</option><option>Publix</option>
+        <option>Costco</option><option>Kroger</option><option>Aldi</option><option>Publix</option><option>Walmart</option>
       </select>
     </div>
     <div class="staple-card">
@@ -369,7 +369,7 @@ const STAPLE_DEFAULTS = {
   flour:         {label:"All-purpose / bread flour",           per:"per 5 lb bag",price:2.49},
   tortillas:     {label:"Tortillas (flour)",                   per:"per pack",    price:2.50}
 };
-const STORES = ["Costco","Kroger","Aldi","Publix"];
+const STORES = ["Costco","Kroger","Aldi","Publix","Walmart"];
 const UNIT_OPTIONS = ["lb","oz","gallon","dozen","8 oz","pack","item"];
 const DEFAULT_STORE = "Kroger";
 function unitFromPer(per){
