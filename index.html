@@ -990,7 +990,7 @@ function defaultMenu(key){ return datasetForPeriod(key).menu.slice(); }
 function normalizeMenu(arr){
   const a=(arr||[]).slice(0,14);
   while(a.length<14) a.push(null);
-  return a.map(k => (k===LEFTOVERS || (k && R[k])) ? k : null);
+  return a.map(k => (k===LEFTOVERS || (k && baseRecipe(k))) ? k : null);
 }
 let mealPlan = {
   A: normalizeMenu(load(ckMeals(CTX.A.key), null) || defaultMenu(CTX.A.key)),
@@ -1087,7 +1087,7 @@ function renderStatus(){
 // Display label for a stored meal value (recipe key, LEFTOVERS, or empty).
 function mealLabel(k){
   if(k===LEFTOVERS) return "Leftovers";
-  return (k && R[k]) ? R[k].title : "— no meal —";
+  return (k && baseRecipe(k)) ? escHTML(baseRecipe(k).title) : "— no meal —";
 }
 function dayCard(slot,i){
   const k=mealPlan[slot][i], d=addDays(CTX[slot].start,i), other=slot==='A'?'B':'A';
@@ -1112,7 +1112,7 @@ function dayCard(slot,i){
   }
   if(k===LEFTOVERS) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">🍲 Leftovers</div></div>`;
   if(!k) return `<div class="ov empty"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m muted">— no meal —</div></div>`;
-  return `<div class="ov" role="button" tabindex="0" onclick="openRecipe('${k}','${slot}',${i})" onkeypress="if(event.key==='Enter')openRecipe('${k}','${slot}',${i})"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">${R[k].title}</div><div class="open-hint">View recipe →</div></div>`;
+  return `<div class="ov" role="button" tabindex="0" onclick="openRecipe('${k}','${slot}',${i})" onkeypress="if(event.key==='Enter')openRecipe('${k}','${slot}',${i})"><div class="d">Day ${i+1} · ${fmtFull(d)}</div><div class="m">${escHTML(baseRecipe(k).title)}</div><div class="open-hint">View recipe →</div></div>`;
 }
 function renderOverview(){
   const mk=(slot,from,to)=>{ let s=""; for(let i=from;i<to;i++) s+=dayCard(slot,i); return s; };
@@ -1127,7 +1127,7 @@ function renderOverview(){
 }
 function toggleEdit(){ editMode=!editMode; renderOverview(); }
 function changeMeal(slot,i,val){
-  mealPlan[slot][i] = (val===LEFTOVERS) ? LEFTOVERS : (val && R[val]) ? val : null;
+  mealPlan[slot][i] = (val===LEFTOVERS) ? LEFTOVERS : (val && baseRecipe(val)) ? val : null;
   mealScale[slot][i] = 1; saveScale(slot);
   saveMeals(slot); renderOverview(); renderRecipes(); renderGrocery(slot);
   toast(val===LEFTOVERS ? "Set to leftovers" : val ? "Meal set" : "Meal cleared");
@@ -1164,7 +1164,7 @@ function resetMealPlan(slot){
 let mealPickerCtx=null;   // {slot,i,btn} of the day card currently being edited
 function mealPickerOptions(){
   return [{v:"",label:"— No Meal —"},{v:LEFTOVERS,label:"Leftovers"}]
-    .concat(ALL_RECIPE_KEYS.map(k=>({v:k,label:R[k].title})));
+    .concat(allRecipeKeys().map(k=>({v:k,label:baseRecipe(k).title})));
 }
 function renderMealPickerList(filter){
   const ul=document.getElementById("mealPickerList"); if(!ul) return;
@@ -1172,7 +1172,7 @@ function renderMealPickerList(filter){
   const f=(filter||"").trim().toLowerCase();
   const opts=mealPickerOptions().filter(o=>!f || o.label.toLowerCase().includes(f));
   if(!opts.length){ ul.innerHTML=`<li class="mp-empty">No matches</li>`; return; }
-  ul.innerHTML=opts.map(o=>`<li class="mp-opt ${o.v===cur?'sel':''}" onmousedown="pickMeal('${o.v}')">${o.label}</li>`).join("");
+  ul.innerHTML=opts.map(o=>`<li class="mp-opt ${o.v===cur?'sel':''}" onmousedown="pickMeal('${esc(o.v)}')">${escHTML(o.label)}</li>`).join("");
 }
 function openMealPicker(slot,i,btn){
   mealPickerCtx={slot,i,btn};
@@ -1223,7 +1223,14 @@ function purgeStaleRecipeEdits(){
   });
 }
 function saveRecipeEdits(){ save('mp_recipeEdits_v1', recipeEdits); }
+let customRecipes = load('mp_customRecipes_v1', {});   // { [key]: {title, serves, ing, steps} } — user-created recipes
+function saveCustomRecipes(){ save('mp_customRecipes_v1', customRecipes); }
+function baseRecipe(k){ return R[k] || customRecipes[k]; }
+function allRecipeKeys(){
+  return Object.keys(R).concat(Object.keys(customRecipes)).sort((a,b)=>baseRecipe(a).title.localeCompare(baseRecipe(b).title));
+}
 function recipeData(k){
+  if(customRecipes[k]) return customRecipes[k];
   const base=R[k], edit=recipeEdits[k];
   if(!edit) return base;
   return Object.assign({}, base, { ing: edit.ing || base.ing, steps: edit.steps || base.steps });
@@ -1236,14 +1243,14 @@ function ingHTML(groups){
   }).join("");
 }
 function recipeCard(k,dayNo,date,scale){
-  const r=R[k], rd=recipeData(k);
-  const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : r.src;
+  const r=baseRecipe(k), rd=recipeData(k);
+  const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : (r.src||"your own recipe");
   const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
   const scaleNote = (scale && scale!==1) ? `<div class="note-box">👥 ${scale}x tonight — grocery list already adjusted.</div>` : "";
   return `<article class="recipe">
     <span class="day-tag">Day ${dayNo} · ${fmt(date)}</span>
-    <h3>${r.title}</h3>
-    <div class="meta">Serves ${r.serves} · Source: ${link}</div>
+    <h3>${escHTML(r.title)}</h3>
+    <div class="meta">Serves ${escHTML(r.serves)} · Source: ${link}</div>
     ${scaleNote}
     <div class="cols">
       <div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
@@ -1301,7 +1308,7 @@ function effectiveGrocery(slot){
     const rawQty = item.always ? 1 : (contrib[item.n]||0);
     if(rawQty<=0) return;
     const qty = item.always ? 1 : (item.divisible ? Math.ceil(rawQty*2)/2 : Math.ceil(rawQty-1e-9));
-    const used = item.always ? [] : [...(usedBy[item.n]||[])].map(k=>R[k]&&R[k].title).filter(Boolean);
+    const used = item.always ? [] : [...(usedBy[item.n]||[])].map(k=>baseRecipe(k)&&escHTML(baseRecipe(k).title)).filter(Boolean);
     sec(item.sec).items.push({item, qty, used});
   });
   return sections;
@@ -1433,25 +1440,25 @@ function resetPrices(){
   initPrices();
   renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B"); toast("Reset to defaults");
 }
-const ALL_RECIPE_KEYS = Object.keys(R).slice().sort((a,b)=>R[a].title.localeCompare(R[b].title));
 function renderAllRecipes(){
   document.getElementById("recipeIndex").innerHTML =
-    `<div class="recipe-index">`+ALL_RECIPE_KEYS.map(k=>
-      `<button class="ri-card" onclick="showRecipeDetail('${k}')"><span class="ri-title">${R[k].title}</span><span class="ri-meta">Serves ${R[k].serves} · ${R[k].src}</span></button>`
-    ).join("")+`</div>`;
+    `<div class="recipe-index">`+allRecipeKeys().map(k=>{
+      const r=baseRecipe(k);
+      return `<button class="ri-card" onclick="showRecipeDetail('${k}')"><span class="ri-title">${escHTML(r.title)}</span><span class="ri-meta">Serves ${escHTML(r.serves)}${r.src?" · "+escHTML(r.src):""}</span></button>`;
+    }).join("")+`</div>`;
 }
 function showRecipeDetail(k,scale){
   scale = scale||1;
-  const r=R[k];
-  const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : r.src;
+  const r=baseRecipe(k);
+  const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : (r.src||"your own recipe");
   const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
   const scaleNote = (scale!==1) ? `<div class="note-box">👥 ${scale}x tonight — grocery list already adjusted.</div>` : "";
   const rd=recipeData(k);
   document.getElementById("recipeDetail").innerHTML =
     `<button class="btn-reset" style="margin-bottom:12px" onclick="hideRecipeDetail()">← All recipes</button>
      <article class="recipe">
-       <h3>${r.title}</h3>
-       <div class="meta">Serves ${r.serves} · Source: ${link}</div>
+       <h3>${escHTML(r.title)}</h3>
+       <div class="meta">Serves ${escHTML(r.serves)} · Source: ${link}</div>
        ${scaleNote}
        <div class="cols"><div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
        <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div></div>
