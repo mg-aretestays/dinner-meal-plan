@@ -1211,11 +1211,19 @@ let recipeEdits = load('mp_recipeEdits_v1', {});   // { [recipeKey]: {ing, steps
 // (array of [heading, ...strings]) are superseded now that the corresponding
 // built-in recipe was rewritten directly with the new structured shape above.
 // An old-shape override would otherwise mask the new base data and break
-// rendering (rows are objects now, not strings).
-Object.keys(recipeEdits).forEach(k=>{
-  const groups = recipeEdits[k] && recipeEdits[k].ing;
-  if(groups && groups.length && Array.isArray(groups[0])) delete recipeEdits[k];
-});
+// rendering (rows are objects now, not strings). Called both here (cleans up
+// whatever was already in localStorage) and from applyRemote (cleans up
+// whatever the shared Firebase data still has, every time it syncs down —
+// otherwise the very next remote sync re-overwrites this local cleanup with
+// the still-stale cloud copy).
+function purgeStaleRecipeEdits(){
+  Object.keys(recipeEdits).forEach(k=>{
+    const groups = recipeEdits[k] && recipeEdits[k].ing;
+    if(groups && groups.length && Array.isArray(groups[0])) delete recipeEdits[k];
+  });
+}
+purgeStaleRecipeEdits();
+saveRecipeEdits();
 function saveRecipeEdits(){ save('mp_recipeEdits_v1', recipeEdits); }
 function recipeData(k){
   const base=R[k], edit=recipeEdits[k];
@@ -1585,6 +1593,7 @@ function applyRemote(data){
     remoteMealsAll  = s.meals||{};
     remoteScaleAll  = s.mealScale||{};
     recipeEdits = s.recipeEdits||{};
+    purgeStaleRecipeEdits();
     checks.A = remoteChecksAll[CTX.A.key]||{};  checks.B = remoteChecksAll[CTX.B.key]||{};
     custom.A = remoteCustomAll[CTX.A.key]||[];  custom.B = remoteCustomAll[CTX.B.key]||[];
     mealPlan.A = normalizeMenu(remoteMealsAll[CTX.A.key] || defaultMenu(CTX.A.key));
