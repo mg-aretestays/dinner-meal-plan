@@ -553,11 +553,12 @@ const MENU_1 = ["bpc","spaghetti","snackwraps","mac","crunchwraps","garlicbrocco
 const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","pork"];
 
 /* ============================ GROCERY (one per menu) ============================ */
-// Master grocery catalog. Each item is bought in `unit`; `per` lists how many
-// of that unit each recipe needs (fractions allowed — e.g. 0.1 bottle of soy
-// sauce). A cycle's quantity is the sum of `per` across the meals actually
-// planned, then rounded UP to whole packages (meat stays fractional by the lb).
-// price = the per-unit/per-package price (editable on the Prices tab) × quantity.
+// Master grocery catalog — purchasable items only. Each item is bought in
+// `unit`; how much of it a given recipe needs lives on that recipe's own
+// ingredient rows (see R), not here. A cycle's quantity is the sum of those
+// recipe-owned amounts across the meals actually planned, then rounded UP to
+// whole packages (meat stays fractional by the lb). price = the
+// per-unit/per-package price (editable on the Prices tab) × quantity.
 const GITEMS = [
   // 🥩 Meat & Seafood
   {n:"Chicken breast", sec:"🥩 Meat & Seafood", staple:"chicken_breast", unit:"lb", divisible:true},
