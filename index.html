@@ -1363,6 +1363,12 @@ function genRecipeKey(title){
   return key;
 }
 
+function addRecipeClicked(){
+  recipeDraft = {key:null, isNew:true, title:"", serves:"", ing:[newIngGroup("")], steps:[]};
+  newItemDraft=null; recipeEditKey=null;
+  renderRecipeForm();
+}
+
 function renderRecipeForm(){
   const d = recipeDraft;
   document.getElementById("recipeDetail").innerHTML = `
@@ -1637,7 +1643,8 @@ function resetPrices(){
 }
 function renderAllRecipes(){
   document.getElementById("recipeIndex").innerHTML =
-    `<div class="recipe-index">`+allRecipeKeys().map(k=>{
+    `<button class="btn-edit" style="margin-bottom:14px" onclick="addRecipeClicked()">➕ Add a recipe</button>
+    <div class="recipe-index">`+allRecipeKeys().map(k=>{
       const r=baseRecipe(k);
       return `<button class="ri-card" onclick="showRecipeDetail('${k}')"><span class="ri-title">${escHTML(r.title)}</span><span class="ri-meta">Serves ${escHTML(r.serves)}${r.src?" · "+escHTML(r.src):""}</span></button>`;
     }).join("")+`</div>`;
