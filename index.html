@@ -1746,6 +1746,9 @@ function applyRemote(data){
     if(s.prices)  prices=s.prices;
     if(s.store)   storeSel=s.store;
     if(s.unit)    unitSel=s.unit;
+    customItems = s.customItems||[];
+    customRecipes = s.customRecipes||{};
+    buildCatalog();     // fold any synced custom items into CATALOG before seeding their prices below
     ensureDefaults();   // fill in any items the remote payload predates (e.g. newly added)
     remoteChecksAll = s.checks||{};
     remoteCustomAll = s.custom||{};
@@ -1760,12 +1763,13 @@ function applyRemote(data){
     mealScale.A = normalizeScale(remoteScaleAll[CTX.A.key]);
     mealScale.B = normalizeScale(remoteScaleAll[CTX.B.key]);
     save(LS.staples,staplePrices); save(LS.prices,prices); save(LS.store,storeSel); save(LS.unit,unitSel);
+    saveCustomItems(); saveCustomRecipes();
     save(ckChecks(CTX.A.key),checks.A); save(ckChecks(CTX.B.key),checks.B);
     save(ckCustom(CTX.A.key),custom.A); save(ckCustom(CTX.B.key),custom.B);
     save(ckMeals(CTX.A.key),mealPlan.A); save(ckMeals(CTX.B.key),mealPlan.B);
     save(ckScale(CTX.A.key),mealScale.A); save(ckScale(CTX.B.key),mealScale.B);
     saveRecipeEdits();
-    renderStapleRows(); renderCatalog(); renderOverview(); renderRecipes(); renderGrocery("A"); renderGrocery("B");
+    renderStapleRows(); renderCatalog(); renderAllRecipes(); renderOverview(); renderRecipes(); renderGrocery("A"); renderGrocery("B");
     setSyncStatus("🟢 synced");
   } finally { applyingRemote=false; }
 }
@@ -1777,7 +1781,7 @@ function syncPush(){
   remoteMealsAll[CTX.A.key]=mealPlan.A; remoteMealsAll[CTX.B.key]=mealPlan.B;
   remoteScaleAll[CTX.A.key]=mealScale.A; remoteScaleAll[CTX.B.key]=mealScale.B;
   myRev = DEVICE+"-"+(++seq);
-  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, mealScale:remoteScaleAll, recipeEdits:recipeEdits});
+  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, mealScale:remoteScaleAll, recipeEdits:recipeEdits, customItems:customItems, customRecipes:customRecipes});
   syncRef.set({rev:myRev, updatedAt:Date.now(), state:state}).catch(function(e){ console.warn('sync push failed',e); });
 }
 
