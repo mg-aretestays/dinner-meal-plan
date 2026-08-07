@@ -150,6 +150,8 @@
   .new-item-form input, .new-item-form select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.88rem;background:#fff;font-family:inherit}
   .new-item-form label{display:flex;align-items:center;gap:5px;font-size:.82rem;color:var(--muted)}
   .new-item-form .ai-title{font-weight:700;font-size:.85rem;width:100%;margin-bottom:2px}
+  .recipe-title-in{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:1.1rem;font-weight:700;font-family:inherit;margin-bottom:8px;color:var(--ink)}
+  .recipe-serves-in{width:160px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.88rem;font-family:inherit;margin-bottom:10px;color:var(--ink)}
 
   .grocery-intro{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
     background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;
@@ -1347,6 +1349,88 @@ function renderIngredientBuilder(){
     + `<button type="button" class="btn-reset" onclick="draftAddGroup()">+ Add section heading</button>`
     + renderNewItemForm();
 }
+let recipeEditKey = null;      // recipe key currently being edited on the detail page, or "the" key while creating; null otherwise
+let recipeDetailScale = 1;     // last-rendered scale for the recipe currently open in read mode — survives the edit round-trip
+
+function draftSetTitle(val){ recipeDraft.title=val; }
+function draftSetServes(val){ recipeDraft.serves=val; }
+function draftSetSteps(val){ recipeDraft.steps = val.split("\n").map(s=>s.trim()).filter(Boolean); }
+
+function genRecipeKey(title){
+  const base = slug(title) || "recipe";
+  let key = "custom-"+base, n=2;
+  while(R[key] || customRecipes[key]){ key = "custom-"+base+"-"+n; n++; }
+  return key;
+}
+
+function renderRecipeForm(){
+  const d = recipeDraft;
+  document.getElementById("recipeDetail").innerHTML = `
+    <button class="btn-reset" style="margin-bottom:12px" onclick="cancelRecipeForm()">← Cancel</button>
+    <article class="recipe">
+      <input type="text" class="recipe-title-in" placeholder="Recipe title" value="${escHTML(d.title)}" onchange="draftSetTitle(this.value)">
+      <input type="text" class="recipe-serves-in" placeholder="Serves (e.g. 4 or 4–6)" value="${escHTML(d.serves)}" onchange="draftSetServes(this.value)">
+      <div class="cols">
+        <div><h4>Ingredients</h4><div id="ingredientBuilder"></div></div>
+        <div><h4>Instructions</h4>
+          <textarea id="recipeStepsIn" class="recipe-edit-box" rows="10" onchange="draftSetSteps(this.value)">${escHTML(d.steps.join("\n"))}</textarea>
+          <div class="edit-hint">One step per line.</div>
+        </div>
+      </div>
+      <div class="recipe-edit-actions">
+        <button class="btn-edit" onclick="saveRecipeForm()">💾 Save</button>
+        <button class="btn-reset" onclick="cancelRecipeForm()">Cancel</button>
+        ${(!d.isNew && customRecipes[d.key]) ? `<button class="btn-reset" onclick="deleteRecipe('${d.key}')">🗑️ Delete recipe</button>` : ""}
+      </div>
+    </article>`;
+  renderIngredientBuilder();
+  document.getElementById("recipeIndex").style.display="none";
+  document.getElementById("recipeDetail").style.display="block";
+}
+
+function editRecipe(k){
+  const rd = recipeData(k), base = baseRecipe(k);
+  recipeDraft = {key:k, isNew:false, title:base.title, serves:base.serves, ing:cloneIng(rd.ing), steps:rd.steps.slice()};
+  recipeEditKey = k;
+  renderRecipeForm();
+}
+
+function cancelRecipeForm(){
+  const wasNew = recipeDraft && recipeDraft.isNew;
+  const k = recipeDraft && recipeDraft.key;
+  recipeDraft=null; newItemDraft=null; recipeEditKey=null;
+  if(wasNew) hideRecipeDetail();
+  else showRecipeDetail(k, recipeDetailScale);
+}
+
+function saveRecipeForm(){
+  const d = recipeDraft;
+  if(!d.title.trim()){ toast("Title required"); return; }
+  const cleanIng = d.ing.map(g=>({heading:g.heading, rows:g.rows.filter(r=>r.text.trim())})).filter(g=>g.rows.length);
+  if(!cleanIng.length){ toast("Add at least one ingredient"); return; }
+  if(d.isNew){
+    const key = genRecipeKey(d.title);
+    customRecipes[key] = {title:d.title.trim(), serves:d.serves.trim()||"4", ing:cleanIng, steps:d.steps};
+    saveCustomRecipes();
+    recipeDraft=null; newItemDraft=null; recipeEditKey=null;
+    renderAllRecipes(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
+    showRecipeDetail(key);
+    toast("Recipe added");
+  } else {
+    const k = d.key;
+    if(customRecipes[k]){
+      customRecipes[k] = {title:d.title.trim(), serves:d.serves.trim()||"4", ing:cleanIng, steps:d.steps};
+      saveCustomRecipes();
+    } else {
+      recipeEdits[k] = {ing:cleanIng, steps:d.steps};
+      saveRecipeEdits();
+    }
+    recipeDraft=null; newItemDraft=null; recipeEditKey=null;
+    renderAllRecipes(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
+    showRecipeDetail(k, recipeDetailScale);
+    toast("Recipe saved");
+  }
+}
 function ingHTML(groups){
   return groups.map(g=>{
     const head = g.heading ? `<div class="sub-h">${escHTML(g.heading)}</div>` : "";
@@ -1559,11 +1643,13 @@ function renderAllRecipes(){
     }).join("")+`</div>`;
 }
 function showRecipeDetail(k,scale){
+  if(recipeEditKey===k){ renderRecipeForm(); return; }
   scale = scale||1;
   const r=baseRecipe(k);
   const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : (r.src||"your own recipe");
   const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
   const scaleNote = (scale!==1) ? `<div class="note-box">👥 ${scale}x tonight — grocery list already adjusted.</div>` : "";
+  recipeDetailScale = scale;
   const rd=recipeData(k);
   document.getElementById("recipeDetail").innerHTML =
     `<button class="btn-reset" style="margin-bottom:12px" onclick="hideRecipeDetail()">← All recipes</button>
@@ -1571,6 +1657,7 @@ function showRecipeDetail(k,scale){
        <h3>${escHTML(r.title)}</h3>
        <div class="meta">Serves ${escHTML(r.serves)} · Source: ${link}</div>
        ${scaleNote}
+       <button class="btn-edit" style="margin:8px 0" onclick="editRecipe('${k}')">✏️ Edit</button>
        <div class="cols"><div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
        <div><h4>Instructions</h4><ol class="steps">${rd.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div></div>
      </article>`;
@@ -1587,6 +1674,7 @@ function openRecipe(k,slot,i){
   var tb=document.querySelector('#tabs button[data-t="recipes"]'); if(tb) tb.classList.add("active");
   document.querySelectorAll("section.panel").forEach(p=>p.classList.remove("active"));
   document.getElementById("recipes").classList.add("active");
+  recipeDraft=null; newItemDraft=null; recipeEditKey=null;
   const scale = (slot!=null && i!=null) ? mealScale[slot][i] : 1;
   showRecipeDetail(k, scale);
 }
