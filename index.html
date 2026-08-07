@@ -136,6 +136,21 @@
   .edit-hint{font-size:.75rem;color:var(--muted);margin:4px 0 12px}
   .recipe-edit-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 
+  .ing-group-editor{border:1px solid var(--line);border-radius:10px;padding:10px;margin:0 0 10px}
+  .ing-heading-in{width:100%;box-sizing:border-box;border:none;border-bottom:1px dashed var(--line);
+    padding:4px 2px 8px;margin-bottom:8px;font-weight:700;font-size:.84rem;font-family:inherit;background:transparent;color:var(--ink)}
+  .ing-heading-in::placeholder{font-weight:400;color:var(--muted)}
+  .ing-row-editor{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
+  .ing-text-in{flex:2 1 220px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:.87rem;font-family:inherit}
+  .ing-link-sel{flex:1 1 160px;border:1px solid var(--line);border-radius:7px;padding:6px 6px;font-size:.82rem;font-family:inherit;background:#fff;color:var(--ink)}
+  .ing-qty-in{flex:0 0 68px;border:1px solid var(--line);border-radius:7px;padding:6px 6px;font-size:.87rem;text-align:right}
+  .ing-unit-lbl{font-size:.76rem;color:var(--muted);flex:0 0 auto}
+  .new-item-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--chip);border:1px dashed var(--line);
+    border-radius:12px;padding:12px 14px;margin:8px 0}
+  .new-item-form input, .new-item-form select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.88rem;background:#fff;font-family:inherit}
+  .new-item-form label{display:flex;align-items:center;gap:5px;font-size:.82rem;color:var(--muted)}
+  .new-item-form .ai-title{font-weight:700;font-size:.85rem;width:100%;margin-bottom:2px}
+
   .grocery-intro{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
     background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;
     box-shadow:var(--shadow);margin:6px 0 14px;position:sticky;top:58px;z-index:20}
@@ -1236,6 +1251,102 @@ function recipeData(k){
   return Object.assign({}, base, { ing: edit.ing || base.ing, steps: edit.steps || base.steps });
 }
 function escHTML(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ---- Structured ingredient builder (shared by recipe edit + create) ---- */
+let recipeDraft = null;   // {key, isNew, title, serves, ing, steps} while creating/editing a recipe; null otherwise
+let newItemDraft = null;  // {gi,ri} while the inline "create new item" form is open for that row; null otherwise
+
+function newIngRow(){ return {text:"", item:null, qty:0}; }
+function newIngGroup(heading){ return {heading:heading||"", rows:[newIngRow()]}; }
+function cloneIng(ing){ return ing.map(g=>({heading:g.heading, rows:g.rows.map(r=>({...r}))})); }
+function distinctSections(){ return [...new Set(allItems().map(i=>i.sec))]; }
+
+function draftAddRow(gi){ recipeDraft.ing[gi].rows.push(newIngRow()); renderIngredientBuilder(); }
+function draftRemoveRow(gi,ri){
+  recipeDraft.ing[gi].rows.splice(ri,1);
+  if(!recipeDraft.ing[gi].rows.length) recipeDraft.ing[gi].rows.push(newIngRow());
+  if(newItemDraft && newItemDraft.gi===gi && newItemDraft.ri>=ri) newItemDraft=null;
+  renderIngredientBuilder();
+}
+function draftAddGroup(){ recipeDraft.ing.push(newIngGroup("")); renderIngredientBuilder(); }
+function draftSetHeading(gi,val){ recipeDraft.ing[gi].heading=val; }
+function draftSetText(gi,ri,val){ recipeDraft.ing[gi].rows[ri].text=val; }
+function draftSetQty(gi,ri,val){ const n=parseFloat(val); recipeDraft.ing[gi].rows[ri].qty=(isNaN(n)||n<0)?0:n; }
+function draftSetItem(gi,ri,val){
+  if(val==="__new__"){ newItemDraft={gi,ri}; renderIngredientBuilder(); return; }
+  recipeDraft.ing[gi].rows[ri].item = val||null;
+  if(!val) recipeDraft.ing[gi].rows[ri].qty=0;
+  renderIngredientBuilder();
+}
+function draftCancelNewItem(){ newItemDraft=null; renderIngredientBuilder(); }
+function draftSaveNewItem(){
+  const n=(document.getElementById('newItemName').value||"").trim();
+  if(!n){ toast("Item name required"); return; }
+  if(allItems().some(i=>i.n.toLowerCase()===n.toLowerCase())){ toast("An item with that name already exists"); return; }
+  const secSel=document.getElementById('newItemSec').value;
+  const secOther=(document.getElementById('newItemSecOther').value||"").trim();
+  const sec = secSel==="__other__" ? (secOther||"Other") : secSel;
+  const unit=(document.getElementById('newItemUnit').value||"").trim()||"item";
+  const divisible=document.getElementById('newItemDivisible').checked;
+  const always=document.getElementById('newItemAlways').checked;
+  const priceRaw=parseFloat(document.getElementById('newItemPrice').value);
+  const price=(isNaN(priceRaw)||priceRaw<0)?0:priceRaw;
+  customItems.push({n, sec, unit, divisible, always, price});
+  saveCustomItems();
+  buildCatalog(); initPrices();
+  const {gi,ri}=newItemDraft;
+  recipeDraft.ing[gi].rows[ri].item=n;
+  newItemDraft=null;
+  renderIngredientBuilder();
+  toast("Item added");
+}
+function renderIngRowEditor(gi,ri,r){
+  const opts = allItems().map(i=>`<option value="${escHTML(i.n)}" ${r.item===i.n?'selected':''}>${escHTML(i.n)}</option>`).join("");
+  const linkedItem = r.item ? allItems().find(i=>i.n===r.item) : null;
+  const qtyField = linkedItem ? `<input type="number" step="0.01" min="0" class="ing-qty-in" value="${r.qty}" onchange="draftSetQty(${gi},${ri},this.value)" placeholder="qty">
+    <span class="ing-unit-lbl">${escHTML(linkedItem.unit||"")}</span>` : "";
+  return `<div class="ing-row-editor">
+    <input type="text" class="ing-text-in" placeholder="e.g. 2 bell peppers, chopped" value="${escHTML(r.text)}" onchange="draftSetText(${gi},${ri},this.value)">
+    <select class="ing-link-sel" onchange="draftSetItem(${gi},${ri},this.value)">
+      <option value="" ${!r.item?'selected':''}>— no grocery link —</option>
+      ${opts}
+      <option value="__new__">+ Create new item…</option>
+    </select>
+    ${qtyField}
+    <button type="button" class="remove-x" title="Remove line" onclick="draftRemoveRow(${gi},${ri})">✕</button>
+  </div>`;
+}
+function renderNewItemForm(){
+  if(!newItemDraft) return "";
+  const secs = distinctSections();
+  return `<div class="new-item-form">
+    <div class="ai-title">➕ New grocery item</div>
+    <input type="text" id="newItemName" placeholder="Item name">
+    <select id="newItemSec" onchange="document.getElementById('newItemSecOther').style.display=(this.value==='__other__'?'inline-block':'none')">
+      ${secs.map(s=>`<option value="${escHTML(s)}">${escHTML(s)}</option>`).join("")}
+      <option value="__other__">Other…</option>
+    </select>
+    <input type="text" id="newItemSecOther" placeholder="New section name" style="display:none">
+    <input type="text" id="newItemUnit" placeholder="Unit (e.g. jar, bag, lb)">
+    <label><input type="checkbox" id="newItemDivisible"> fractional amounts allowed</label>
+    <label><input type="checkbox" id="newItemAlways"> always needed, not recipe-specific</label>
+    <input type="number" step="0.01" min="0" id="newItemPrice" placeholder="Starting price">
+    <button type="button" class="btn-edit" onclick="draftSaveNewItem()">Save item</button>
+    <button type="button" class="btn-reset" onclick="draftCancelNewItem()">Cancel</button>
+  </div>`;
+}
+function renderIngredientBuilder(){
+  const el = document.getElementById('ingredientBuilder');
+  if(!el || !recipeDraft) return;
+  el.innerHTML = recipeDraft.ing.map((g,gi)=>`
+    <div class="ing-group-editor">
+      <input type="text" class="ing-heading-in" placeholder="Section heading (optional)" value="${escHTML(g.heading)}" onchange="draftSetHeading(${gi},this.value)">
+      ${g.rows.map((r,ri)=>renderIngRowEditor(gi,ri,r)).join("")}
+      <button type="button" class="btn-reset" onclick="draftAddRow(${gi})">+ Add ingredient</button>
+    </div>`).join("")
+    + `<button type="button" class="btn-reset" onclick="draftAddGroup()">+ Add section heading</button>`
+    + renderNewItemForm();
+}
 function ingHTML(groups){
   return groups.map(g=>{
     const head = g.heading ? `<div class="sub-h">${escHTML(g.heading)}</div>` : "";
