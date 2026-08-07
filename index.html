@@ -1266,10 +1266,6 @@ function renderRecipes(){
 /* ============================ GROCERY ============================ */
 function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 function gid(sec,name){ return slug(sec)+"__"+slug(name); }   // stable id, independent of position
-// How many purchase units this cycle needs of an item: sum each planned
-// night's per-recipe amount times that night's serving scale, then round UP
-// to whole packages (meat/divisible items keep a fractional weight, rounded
-// up to the nearest 0.5).
 function unitLabel(unit,q){
   if(unit==="lb") return "lb";
   if(q===1) return unit;
