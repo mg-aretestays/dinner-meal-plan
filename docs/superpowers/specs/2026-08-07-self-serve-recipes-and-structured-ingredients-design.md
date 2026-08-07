@@ -38,6 +38,13 @@ This design:
    that behaves identically to the 21 built-in ones everywhere (meal
    picker, Cycle A/B tabs, grocery math), with edit and delete.
 
+Guiding principle throughout: the Recipes, Grocery, and Prices tabs are one
+system over shared data, not separate features that happen to sit in the
+same file. Anything a built-in recipe or catalog item can do, a
+user-created one can do too — full per-store pricing, full participation
+in grocery math, no second-class "custom" variant of a capability that
+already exists.
+
 ---
 
 ## 1. Data model
@@ -87,10 +94,24 @@ function allItems(){ return GITEMS.concat(customItems); }
 
 Every place that currently iterates `GITEMS` directly (`buildCatalog`,
 `effectiveGrocery`, the Prices-tab catalog table) switches to `allItems()`.
-Custom items get their own flat price (not wired into the shared
-`STAPLE_DEFAULTS`/per-store staple pricing table — that stays a
-built-in-only concept for now; see Out of Scope). A new item's `n` must be
-unique against `allItems()` at creation time.
+
+There's no "flat price" concept anywhere in this app to fall back on —
+every non-staple catalog item already gets full 4-store price comparison
+today (`prices[it.n][store]` for all of Costco/Kroger/Aldi/Publix, plus a
+selected store and unit, via `buildCatalog`/`initPrices`/`ensureDefaults`).
+A custom item is just another non-staple entry in that same catalog — once
+`buildCatalog` folds `customItems` into what it scans (the one-line switch
+to `allItems()` above), `initPrices`/`ensureDefaults` pick it up
+automatically and it gets the identical per-store comparison table as
+"Bell peppers" or "Pork loin roast" do. No separate pricing path, no
+second-class treatment — a custom item shows up on the Prices tab exactly
+like a built-in one, immediately editable per store. (`STAPLE_DEFAULTS` —
+the *separate* mechanism where several catalog rows like the three
+shredded-cheese variants share one priced key — stays built-in-only; a
+custom item doesn't need to join an existing staple group to get per-store
+pricing, since that's already universal.)
+
+A new item's `n` must be unique against `allItems()` at creation time.
 
 v1 has no deletion for catalog items (custom or built-in) — only addition
 and price edits, matching today's Prices-tab capability. Deleting an item
@@ -343,9 +364,6 @@ Specific to this change:
 ## Out of scope
 
 - Deleting or renaming existing catalog items (built-in or custom).
-- Wiring custom items into the shared per-store staple pricing table —
-  they get one flat price, not the Costco/Kroger/Aldi/Publix comparison
-  built-ins have.
 - Reordering ingredient rows/groups (add/remove only).
 - Any change to how steps are entered or displayed.
 - Any change to serving-scale, the Purchased-pile grocery UI, or the
