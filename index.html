@@ -391,10 +391,33 @@ let unitSel = {};      // key/name -> selected unit label
 /* ============================ RECIPES ============================ */
 const R = {
   bpc:{title:"Black Pepper Chicken", serves:"4", src:"omnivorescookbook.com", url:"https://omnivorescookbook.com/black-pepper-chicken/",
-    ing:[["Chicken","1 lb chicken breasts (or thighs), sliced against the grain into 1/4\" thick pieces"],
-      ["Marinade","1 Tbsp light soy sauce","1 Tbsp Shaoxing wine (or dry sherry)","1 Tbsp cornstarch"],
-      ["Sauce","1/2 cup chicken broth","2 Tbsp light soy sauce","2 Tbsp Shaoxing wine","2 tsp dark soy sauce","1 Tbsp cornstarch","1 1/2 Tbsp sugar","2 tsp coarsely ground black pepper","1/8 tsp salt"],
-      ["Stir fry","2 Tbsp peanut oil (or vegetable oil)","1 Tbsp minced ginger","2 cloves garlic, minced","1/2 white onion, chopped","2 bell peppers, chopped"]],
+    ing:[
+      {heading:"Chicken", rows:[
+        {text:"1 lb chicken breasts (or thighs), sliced against the grain into 1/4\" thick pieces", item:"Chicken breast", qty:1}
+      ]},
+      {heading:"Marinade", rows:[
+        {text:"1 Tbsp light soy sauce", item:null, qty:0},
+        {text:"1 Tbsp Shaoxing wine (or dry sherry)", item:null, qty:0},
+        {text:"1 Tbsp cornstarch", item:null, qty:0}
+      ]},
+      {heading:"Sauce", rows:[
+        {text:"1/2 cup chicken broth", item:"Chicken broth (low-sodium)", qty:0.2},
+        {text:"2 Tbsp light soy sauce", item:"Light soy sauce", qty:0.1},
+        {text:"2 Tbsp Shaoxing wine", item:"Shaoxing wine (or dry sherry)", qty:0.1},
+        {text:"2 tsp dark soy sauce", item:"Dark soy sauce", qty:0.05},
+        {text:"1 Tbsp cornstarch", item:"Cornstarch", qty:0.2},
+        {text:"1 1/2 Tbsp sugar", item:null, qty:0},
+        {text:"2 tsp coarsely ground black pepper", item:null, qty:0},
+        {text:"1/8 tsp salt", item:null, qty:0}
+      ]},
+      {heading:"Stir fry", rows:[
+        {text:"2 Tbsp peanut oil (or vegetable oil)", item:"Vegetable/peanut oil", qty:0.1},
+        {text:"1 Tbsp minced ginger", item:"Fresh ginger", qty:0.5},
+        {text:"2 cloves garlic, minced", item:"Garlic", qty:0.15},
+        {text:"1/2 white onion, chopped", item:"Yellow onions", qty:0.5},
+        {text:"2 bell peppers, chopped", item:"Bell peppers", qty:2}
+      ]}
+    ],
     steps:["Combine chicken, soy sauce, Shaoxing wine, and cornstarch in a medium bowl. Gently mix by hand until the chicken is coated in a thin layer. Marinate 10–15 minutes.",
       "Combine all the sauce ingredients in a small bowl. Mix well and set aside.",
       "Heat 1 Tbsp oil in a large skillet over medium-high until hot. Add the chicken and spread into a single layer. Sear ~1 minute until lightly browned, flip, cook 30 sec–1 min until both sides are browned but still a bit pink inside. Transfer to a plate.",
@@ -402,48 +425,142 @@ const R = {
       "Stir the sauce until the cornstarch is fully dissolved, pour into the skillet, and stir immediately until it thickens enough to coat a spoon. Add the chicken back and toss to coat. Turn off heat and transfer everything to a plate so it stops cooking.",
       "Serve hot over rice."]},
   tacos:{title:"Slow-Cooker Shredded Chicken Tacos", serves:"6", src:"slowcookermeals.com", url:"https://slowcookermeals.com/slow-cooker-shredded-chicken-tacos/",
-    ing:[["","2 lbs boneless, skinless chicken breasts (about 4 medium)","1 (16 oz) jar of your favorite salsa","1 (1.5 oz) packet taco seasoning","1 tsp black pepper","1 (4 oz) can diced green chilies","Tortillas, to serve"],
-      ["Toppings","Cilantro","Diced tomatoes","Monterey Jack & cheddar cheese","Kroger queso","Red onion"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"2 lbs boneless, skinless chicken breasts (about 4 medium)", item:"Chicken breast", qty:2},
+        {text:"1 (16 oz) jar of your favorite salsa", item:"Salsa", qty:1},
+        {text:"1 (1.5 oz) packet taco seasoning", item:"Taco seasoning", qty:1},
+        {text:"1 tsp black pepper", item:null, qty:0},
+        {text:"1 (4 oz) can diced green chilies", item:"Diced green chilies", qty:1},
+        {text:"Tortillas, to serve", item:"Small flour tortillas", qty:1}
+      ]},
+      {heading:"Toppings", rows:[
+        {text:"Cilantro", item:"Fresh cilantro", qty:0.3},
+        {text:"Diced tomatoes", item:null, qty:0},
+        {text:"Monterey Jack & cheddar cheese", item:null, qty:0},
+        {text:"Kroger queso", item:"Kroger queso dip", qty:0.5},
+        {text:"Red onion", item:"Red onion", qty:1}
+      ]}
+    ],
     steps:["Place chicken breasts in the slow cooker. Cover with salsa and sprinkle taco seasoning, black pepper, and green chilies over the top.",
       "Cover and cook on low 7–8 hours or high 2½–3 hours. When done, shred the chicken with two forks and stir into the sauce.",
       "Serve on tortillas with your favorite toppings."]},
   padthai:{title:"Chicken Pad Thai", serves:"4", src:"tastesbetterfromscratch.com", url:"https://tastesbetterfromscratch.com/pad-thai/",
-    ing:[["","8 oz flat rice noodles","3 Tbsp oil","3 cloves garlic, minced","8 oz chicken (or shrimp / extra-firm tofu), cut into small pieces","2 eggs","1 cup fresh bean sprouts","1 red bell pepper, thinly sliced","3 green onions, chopped","1/2 cup dry roasted peanuts","2 limes","1/2 cup fresh cilantro, chopped"],
-      ["Sauce","3 Tbsp fish sauce","1 Tbsp low-sodium soy sauce","5 Tbsp light brown sugar","2 Tbsp rice vinegar (or tamarind paste)","1 Tbsp Sriracha (or more, to taste)","2 Tbsp creamy peanut butter (optional)"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"8 oz flat rice noodles", item:"Flat rice noodles", qty:1},
+        {text:"3 Tbsp oil", item:"Vegetable/peanut oil", qty:0.1},
+        {text:"3 cloves garlic, minced", item:"Garlic", qty:0.2},
+        {text:"8 oz chicken (or shrimp / extra-firm tofu), cut into small pieces", item:"Chicken breast", qty:0.5},
+        {text:"2 eggs", item:"Eggs", qty:0.2},
+        {text:"1 cup fresh bean sprouts", item:"Bean sprouts", qty:1},
+        {text:"1 red bell pepper, thinly sliced", item:"Bell peppers", qty:1},
+        {text:"3 green onions, chopped", item:"Green onions", qty:0.5},
+        {text:"1/2 cup dry roasted peanuts", item:"Dry roasted peanuts", qty:0.3},
+        {text:"2 limes", item:"Limes", qty:2},
+        {text:"1/2 cup fresh cilantro, chopped", item:"Fresh cilantro", qty:0.4},
+        {text:"6 oz Pad Thai Sauce", item:"Pad Thai Sauce", qty:1}
+      ]}
+    ],
     steps:["Cook noodles per package, just until tender. Rinse under cold water.",
-      "Make the sauce by combining all sauce ingredients in a bowl. Set aside.",
       "Stir-fry: Heat 1½ Tbsp oil in a wok over medium-high. Add chicken, garlic, and bell pepper. Cook chicken until just cooked through, ~3–4 minutes, flipping once.",
       "Push everything to the side. Add a little more oil and the beaten eggs. Scramble, breaking into small pieces as they cook.",
       "Add noodles, sauce, bean sprouts, and peanuts (reserve some peanuts for topping). Toss to combine.",
       "Garnish with green onions, extra peanuts, cilantro, and lime wedges. Serve immediately."]},
   stirfry:{title:"Chicken Stir Fry Noodles", serves:"~4", src:"eatwell101.com", url:"https://www.eatwell101.com/chicken-pasta-skillet-recipe",
-    ing:[["","1 lb skinless, boneless chicken breast, cut into strips","1 Tbsp olive oil","3 garlic cloves, finely minced","1 medium carrot, julienned or shredded","8 oz spaghetti noodles","3 cups broccoli florets","Chopped scallion + toasted sesame seeds, to garnish"],
-      ["Sauce","1/2 tsp grated or ground ginger","1 Tbsp brown sugar (or honey)","1/4 cup low-sodium soy sauce","2 Tbsp hoisin sauce","2 tsp sesame oil","1/4 tsp crushed red pepper flakes (optional)","Fresh cracked black pepper, to taste"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"1 lb skinless, boneless chicken breast, cut into strips", item:"Chicken breast", qty:1},
+        {text:"1 Tbsp olive oil", item:"Olive oil", qty:0.05},
+        {text:"3 garlic cloves, finely minced", item:"Garlic", qty:0.2},
+        {text:"1 medium carrot, julienned or shredded", item:"Carrots", qty:0.3},
+        {text:"8 oz spaghetti noodles", item:"Spaghetti", qty:0.5},
+        {text:"3 cups broccoli florets", item:"Broccoli florets", qty:1},
+        {text:"Chopped scallion, to garnish", item:"Green onions", qty:0.3},
+        {text:"Toasted sesame seeds, to garnish", item:"Sesame seeds", qty:0.1}
+      ]},
+      {heading:"Sauce", rows:[
+        {text:"1/2 tsp grated or ground ginger", item:"Fresh ginger", qty:0.5},
+        {text:"1 Tbsp brown sugar (or honey)", item:null, qty:0},
+        {text:"1/4 cup low-sodium soy sauce", item:"Light soy sauce", qty:0.1},
+        {text:"2 Tbsp hoisin sauce", item:"Hoisin sauce", qty:0.2},
+        {text:"2 tsp sesame oil", item:"Toasted sesame oil", qty:0.1},
+        {text:"1/4 tsp crushed red pepper flakes (optional)", item:null, qty:0},
+        {text:"Fresh cracked black pepper, to taste", item:null, qty:0}
+      ]}
+    ],
     steps:["In a large pot of boiling salted water, cook the spaghetti per package directions. Add the broccoli florets for the last 5 minutes and cook until tender. Drain noodles and broccoli and set aside.",
       "While the pasta cooks, whisk together the brown sugar, soy sauce, hoisin, sesame oil, ginger, red pepper, and black pepper in a small bowl.",
       "Season chicken strips with salt and pepper. Add olive oil to a skillet and cook chicken in an even layer over medium heat, turning occasionally, 2–3 minutes until golden. Stir in garlic and carrots and cook a minute more until cooked through.",
       "Transfer the cooked spaghetti and broccoli to the skillet, pour the sauce on top, and toss until fully incorporated. Reheat a couple minutes and serve garnished with scallion and toasted sesame seeds."]},
   thainoodles:{title:"Spicy Thai Noodles", serves:"6", src:"thechunkychef.com", url:"https://www.thechunkychef.com/spicy-thai-noodles/",
-    ing:[["","1 lb linguine pasta (or fettuccine / spaghetti)","1/2 – 1 1/2 Tbsp red pepper flakes (to taste)","2 Tbsp vegetable oil","1/3 – 1/2 cup toasted sesame oil","1 1/2 tsp chili paste","6 Tbsp soy sauce","6 Tbsp honey","Scallions, carrots, peanuts, cilantro, Sriracha & sesame seeds, to garnish"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"1 lb chicken breast", item:"Chicken breast", qty:1},
+        {text:"1 lb rice noodles", item:"Flat rice noodles", qty:2},
+        {text:"1/2 – 1 1/2 Tbsp red pepper flakes (to taste)", item:null, qty:0},
+        {text:"2 Tbsp vegetable oil", item:"Vegetable/peanut oil", qty:0.1},
+        {text:"1/3 – 1/2 cup toasted sesame oil", item:"Toasted sesame oil", qty:0.4},
+        {text:"2 tsp chili paste", item:"Chili paste (sambal)", qty:0.1},
+        {text:"6 Tbsp soy sauce", item:"Light soy sauce", qty:0.3},
+        {text:"6 Tbsp honey", item:"Honey", qty:0.3},
+        {text:"Scallions, to garnish", item:"Green onions", qty:0.4},
+        {text:"Carrots, to garnish", item:"Carrots", qty:0.2},
+        {text:"Peanuts, to garnish", item:"Dry roasted peanuts", qty:0.3},
+        {text:"Cilantro, to garnish", item:"Fresh cilantro", qty:0.3},
+        {text:"Sriracha, to garnish", item:"Sriracha", qty:0.05},
+        {text:"Sesame seeds, to garnish", item:"Sesame seeds", qty:0.1}
+      ]}
+    ],
     steps:["Chop garnishes and set aside.","Boil pasta, then drain.",
       "While the pasta boils, heat the oils in a large skillet with the red pepper flakes.",
       "Once the oil is hot, strain out the pepper flakes, reserving the oil in a bowl. Add the reserved oil back to the skillet and add the chili paste. Whisk in the soy sauce and honey.",
       "Toss the pasta in the skillet with the sauce.",
-      "Serve hot, room temperature, or cold. Top with garnishes and enjoy."],
-    note:"Vegetarian as written — add sliced cooked chicken if you want a protein."},
+      "Serve hot, room temperature, or cold. Top with garnishes and enjoy."]},
   snackwraps:{title:"Buffalo Ranch Snack Wraps", serves:"4", src:"Your recipe (inline)", url:"",
-    ing:[["","Breaded chicken strips/patties (frozen)","Shredded lettuce","Mexican-blend shredded cheese","Buffalo sauce","Ranch dressing","Small flour tortillas"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"Breaded chicken strips/patties (frozen)", item:"Breaded chicken strips (frozen)", qty:1},
+        {text:"Shredded lettuce", item:"Iceberg lettuce", qty:0.4},
+        {text:"Mexican-blend shredded cheese", item:"Mexican-blend shredded cheese", qty:1},
+        {text:"Buffalo sauce", item:"Buffalo sauce", qty:0.3},
+        {text:"Ranch dressing", item:"Ranch dressing", qty:0.3},
+        {text:"Small flour tortillas", item:"Small flour tortillas", qty:1}
+      ]}
+    ],
     steps:["Cook the breaded chicken per package directions.","Toss or drizzle the cooked chicken with buffalo sauce.",
       "Lay chicken on a tortilla with shredded lettuce, Mexican cheese, and a drizzle of ranch.","Fold up and serve."]},
   crunchwraps:{title:"Beef Crunch Wraps", serves:"4–6", src:"Your recipe (inline)", url:"",
-    ing:[["","1 lb ground beef","Kroger queso","Shredded lettuce","Mexican-blend shredded cheese","Diced tomatoes","Large burrito flour tortillas","Corn tortillas / tostadas (the crunch layer)","Taco seasoning"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"1 lb ground beef", item:"Ground beef", qty:1},
+        {text:"Kroger queso", item:"Kroger queso dip", qty:0.6},
+        {text:"Shredded lettuce", item:"Iceberg lettuce", qty:0.5},
+        {text:"Mexican-blend shredded cheese", item:"Mexican-blend shredded cheese", qty:1},
+        {text:"Diced tomatoes", item:"Tomatoes", qty:3},
+        {text:"Large burrito flour tortillas", item:"Large burrito tortillas", qty:1},
+        {text:"Corn tortillas / tostadas (the crunch layer)", item:"Corn tortillas / tostadas", qty:1},
+        {text:"Taco seasoning", item:"Taco seasoning", qty:1}
+      ]}
+    ],
     steps:["Brown the ground beef and drain. Add taco seasoning + a splash of water and simmer until thickened.",
       "On a large burrito tortilla, layer seasoned beef and queso in the center, then set a corn tortilla on top.",
       "Add lettuce, diced tomatoes, and Mexican cheese on top of the corn tortilla.",
       "Fold the edges of the large tortilla up over the center, pleating as you go.",
       "Crisp seam-side-down in a hot skillet until golden, then flip and crisp the other side."]},
   garlicbroccoli:{title:"Spicy Garlic Chicken & Broccoli Noodle Bowl", serves:"4", src:"chefnovarecipes.com", url:"https://www.chefnovarecipes.com/spicy-garlic-chicken-and-broccoli-noodle-bowl/",
-    ing:[["","1 lb chicken breast, sliced","8 oz noodles (soba, rice, or your choice)","2 cups broccoli florets","4 cloves garlic, minced","2 Tbsp soy sauce","1 Tbsp chili paste","2 Tbsp olive oil","Salt and pepper, to taste"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"1 lb chicken breast, sliced", item:"Chicken breast", qty:1},
+        {text:"8 oz noodles (soba, rice, or your choice)", item:"Soba/rice noodles", qty:1},
+        {text:"2 cups broccoli florets", item:"Broccoli florets", qty:1},
+        {text:"4 cloves garlic, minced", item:"Garlic", qty:0.3},
+        {text:"2 Tbsp soy sauce", item:"Light soy sauce", qty:0.05},
+        {text:"1 Tbsp chili paste", item:"Chili paste (sambal)", qty:0.1},
+        {text:"2 Tbsp olive oil", item:"Olive oil", qty:0.05},
+        {text:"Salt and pepper, to taste", item:null, qty:0}
+      ]}
+    ],
     steps:["Cook the noodles per package until al dente, then drain and set aside.",
       "In a large skillet, heat the olive oil over medium until it shimmers.",
       "Add the minced garlic and sauté until golden and fragrant, about 1 minute.",
@@ -453,16 +570,43 @@ const R = {
       "Add the cooked noodles and toss everything together.",
       "Season with salt and pepper to taste before serving hot."]},
   alfredo:{title:"Chicken Alfredo", serves:"4", src:"Your recipe (inline)", url:"",
-    ing:[["","1 lb chicken","1 lb noodles (fettuccine)","1 jar/can Alfredo sauce"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"1 lb chicken", item:"Chicken breast", qty:1},
+        {text:"1 lb noodles (fettuccine)", item:"Fettuccine", qty:1},
+        {text:"1 jar/can Alfredo sauce", item:"Alfredo sauce", qty:1}
+      ]}
+    ],
     steps:["Boil the noodles per package; drain.","Season and cook the chicken, then slice.",
       "Warm the Alfredo sauce, then toss with the noodles and chicken. Serve."]},
   spaghetti:{title:"Spaghetti & Meatballs", serves:"4–6", src:"Your recipe (inline)", url:"",
-    ing:[["","1 lb noodles (spaghetti)","1 lb meatballs","1 jar/can pasta sauce","Italian seasoning"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"1 lb noodles (spaghetti)", item:"Spaghetti", qty:1},
+        {text:"1 lb meatballs", item:"Frozen meatballs", qty:1},
+        {text:"1 jar/can pasta sauce", item:"Pasta sauce", qty:1},
+        {text:"Italian seasoning", item:null, qty:0}
+      ]}
+    ],
     steps:["Boil the spaghetti per package; drain.",
       "Heat the pasta sauce with the meatballs and a shake of Italian seasoning until the meatballs are heated through.",
       "Serve the sauce and meatballs over the spaghetti."]},
   garlicpasta:{title:"Roasted Garlic Spaghetti", serves:"4–6", src:"motherthyme.com", url:"https://www.motherthyme.com/2017/01/roasted-garlic-spaghetti.html",
-    ing:[["","2 whole garlic heads","1/2 tsp olive oil","1 lb spaghetti","1/2 cup reserved pasta water","1 stick (1/2 cup) butter","2 Tbsp freshly grated Parmesan","2–3 Tbsp chopped parsley (or basil)","1/2 tsp salt, plus more to taste","1/4 tsp black pepper, plus more to taste","Shaved Parmesan, to garnish (optional)","Pinch of red pepper flakes (optional)"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"2 whole garlic heads", item:"Garlic", qty:2},
+        {text:"1/2 tsp olive oil", item:"Olive oil", qty:0.05},
+        {text:"1 lb spaghetti", item:"Spaghetti", qty:1},
+        {text:"1/2 cup reserved pasta water", item:null, qty:0},
+        {text:"1 stick (1/2 cup) butter", item:"Butter", qty:0.25},
+        {text:"2 Tbsp freshly grated Parmesan", item:"Grated Parmesan", qty:0.2},
+        {text:"2–3 Tbsp chopped parsley (or basil)", item:"Fresh parsley", qty:1},
+        {text:"1/2 tsp salt, plus more to taste", item:null, qty:0},
+        {text:"1/4 tsp black pepper, plus more to taste", item:null, qty:0},
+        {text:"Shaved Parmesan, to garnish (optional)", item:null, qty:0},
+        {text:"Pinch of red pepper flakes (optional)", item:null, qty:0}
+      ]}
+    ],
     steps:["Preheat oven to 400°F.",
       "Cut the tops off the garlic heads to expose the cloves. Drizzle with olive oil and a pinch of salt.",
       "Wrap garlic in foil (or set each head in a muffin tin) and roast 35–40 minutes until soft. Cool to the touch.",
@@ -472,7 +616,22 @@ const R = {
       "Add the roasted garlic, then the cooked spaghetti and reserved pasta water; stir until coated and heated through.",
       "Off heat, stir in the cheese, herbs, and red pepper flakes if using. Season with salt and pepper and garnish with shaved Parmesan."]},
   pork:{title:"Honey Garlic Pork Tenderloin", serves:"6", src:"downshiftology.com", url:"https://downshiftology.com/recipes/honey-garlic-pork-tenderloin/",
-    ing:[["","2 (1 lb each) pork tenderloins","1 tsp garlic powder","1 tsp sweet paprika","1 tsp onion powder","1 tsp dried thyme","1 tsp kosher salt","1/2 tsp freshly ground black pepper","2 Tbsp extra-virgin olive oil","1/2 cup honey","1/4 cup tamari / soy sauce","2 Tbsp apple cider vinegar","6 garlic cloves, minced"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"2 (1 lb each) pork tenderloins", item:"Pork tenderloin", qty:2},
+        {text:"1 tsp garlic powder", item:null, qty:0},
+        {text:"1 tsp sweet paprika", item:null, qty:0},
+        {text:"1 tsp onion powder", item:null, qty:0},
+        {text:"1 tsp dried thyme", item:null, qty:0},
+        {text:"1 tsp kosher salt", item:null, qty:0},
+        {text:"1/2 tsp freshly ground black pepper", item:null, qty:0},
+        {text:"2 Tbsp extra-virgin olive oil", item:"Olive oil", qty:0.05},
+        {text:"1/2 cup honey", item:"Honey", qty:0.4},
+        {text:"1/4 cup tamari / soy sauce", item:"Light soy sauce", qty:0.1},
+        {text:"2 Tbsp apple cider vinegar", item:"Apple cider vinegar", qty:0.1},
+        {text:"6 garlic cloves, minced", item:"Garlic", qty:0.5}
+      ]}
+    ],
     steps:["Preheat the oven to 375°F. In a small bowl, stir together the garlic powder, paprika, onion powder, thyme, salt, and pepper. Set aside.",
       "In a medium bowl, whisk together the honey, soy sauce, vinegar, and garlic. Set aside.",
       "Sprinkle the dry spice blend all over the pork and rub it in with your hands.",
@@ -481,10 +640,36 @@ const R = {
       "Return the skillet to the stove; remove the pork to a plate and cover with foil to rest 5–10 minutes. Simmer the remaining sauce 1–2 minutes until slightly reduced and thickened.",
       "Slice the pork into 1/2-inch slices, arrange on a platter, drizzle with the sauce, and serve."]},
   breakfast:{title:"Breakfast for Dinner", serves:"4", src:"Your recipe (inline)", url:"",
-    ing:[["","Pancakes (mix + as needed)","Bacon","Sausage","Eggs"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"Pancakes (mix + as needed)", item:"Pancake mix", qty:1},
+        {text:"Maple syrup", item:"Pancake/maple syrup", qty:1},
+        {text:"Bacon", item:"Bacon", qty:1},
+        {text:"Sausage", item:"Breakfast sausage", qty:1},
+        {text:"Eggs", item:"Eggs", qty:0.5}
+      ]}
+    ],
     steps:["Cook the bacon and sausage.","Scramble or fry the eggs.","Griddle the pancakes.","Serve everything together."]},
   helper:{title:"One-Pot Cheeseburger Macaroni (Hamburger Helper)", serves:"6", src:"jawnsicooked.com", url:"https://jawnsicooked.com/dinner/one-pot-homemade-cheeseburger-macaroni-hamburger-helper/",
-    ing:[["","2 Tbsp butter","1 small onion, diced","1 lb lean ground beef","1 Tbsp tomato paste","2 tsp smoked paprika","1 1/2 tsp garlic powder","1 tsp onion powder","1 1/2 tsp seasoned salt (or table salt)","1 tsp sugar","1/2 tsp freshly ground black pepper","2 Tbsp all-purpose flour","2 cups beef broth","1 1/2 cups milk (not skim)","2 cups (1/2 lb) dry cavatappi or macaroni","2 cups (8 oz block) grated yellow sharp cheddar"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"2 Tbsp butter", item:"Butter", qty:0.06},
+        {text:"1 small onion, diced", item:"Yellow onions", qty:1},
+        {text:"1 lb lean ground beef", item:"Ground beef", qty:1},
+        {text:"1 Tbsp tomato paste", item:"Tomato paste", qty:1},
+        {text:"2 tsp smoked paprika", item:null, qty:0},
+        {text:"1 1/2 tsp garlic powder", item:null, qty:0},
+        {text:"1 tsp onion powder", item:null, qty:0},
+        {text:"1 1/2 tsp seasoned salt (or table salt)", item:null, qty:0},
+        {text:"1 tsp sugar", item:null, qty:0},
+        {text:"1/2 tsp freshly ground black pepper", item:null, qty:0},
+        {text:"2 Tbsp all-purpose flour", item:"Bread/all-purpose flour", qty:0.05},
+        {text:"2 cups beef broth", item:"Beef broth", qty:0.5},
+        {text:"1 1/2 cups milk (not skim)", item:"Milk", qty:0.1},
+        {text:"2 cups (1/2 lb) dry cavatappi or macaroni", item:"Cavatappi/macaroni", qty:1},
+        {text:"2 cups (8 oz block) grated yellow sharp cheddar", item:"Sharp cheddar cheese", qty:1}
+      ]}
+    ],
     steps:["In a large deep sauté pan or cast iron skillet, melt the butter over medium heat.",
       "Add the diced onion and cook, stirring occasionally, until translucent, about 5 minutes.",
       "Add the ground beef and cook, breaking it up, until browned, 4–5 minutes.",
@@ -495,28 +680,76 @@ const R = {
       "Reduce heat to medium-low and simmer until the pasta is cooked through, stirring occasionally so it doesn't stick, 10–12 minutes.",
       "Remove from heat and stir in the cheese."]},
   burgers:{title:"Burgers (with homemade seasoning)", serves:"4", src:"Your recipe + simplejoy.com seasoning", url:"https://www.simplejoy.com/hamburger-seasoning/",
-    ing:[["Burgers","1 lb ground beef (80/20)","American cheese","Hamburger buns","1 Tbsp Hamburger Seasoning (below)"],
-      ["Hamburger Seasoning (makes 9 Tbsp)","2 Tbsp paprika","2 Tbsp brown sugar","1 Tbsp onion powder","2 tsp table salt","2 tsp black pepper","2 tsp garlic powder","2 tsp cumin","1/2 tsp cayenne pepper"]],
+    ing:[
+      {heading:"Burgers", rows:[
+        {text:"1 lb ground beef (80/20)", item:"Ground beef", qty:1},
+        {text:"American cheese", item:"American cheese singles", qty:1},
+        {text:"Hamburger buns", item:"Hamburger buns", qty:1},
+        {text:"1 Tbsp Hamburger Seasoning (below)", item:null, qty:0}
+      ]},
+      {heading:"Hamburger Seasoning (makes 9 Tbsp)", rows:[
+        {text:"2 Tbsp paprika", item:null, qty:0},
+        {text:"2 Tbsp brown sugar", item:null, qty:0},
+        {text:"1 Tbsp onion powder", item:null, qty:0},
+        {text:"2 tsp table salt", item:null, qty:0},
+        {text:"2 tsp black pepper", item:null, qty:0},
+        {text:"2 tsp garlic powder", item:null, qty:0},
+        {text:"2 tsp cumin", item:null, qty:0},
+        {text:"1/2 tsp cayenne pepper", item:null, qty:0}
+      ]}
+    ],
     steps:["Make the seasoning: mix all seasoning ingredients in a small bowl (makes 9 Tbsp / enough for 9 lbs of meat; store the rest airtight up to 6 months).",
       "Divide 1 lb of 80/20 ground beef into four equal patties, indenting the middle of each for even cooking.",
       "Use 1 Tbsp of the seasoning total to rub into both sides of all four patties (or mix 1 Tbsp into the pound of beef).",
       "Grill or skillet the patties over medium heat about 3 1/2 minutes per side for medium; add American cheese near the end to melt.",
       "Serve on buns with your favorite toppings."]},
   mac:{title:"Stovetop Mac & Cheese", serves:"6", src:"Your recipe (photo)", url:"",
-    ing:[["","1 stick butter","2 Tbsp flour","3 cups milk","4 oz Monterey Jack cheese","4 oz sharp cheddar cheese","16 oz elbow macaroni","Salt, pepper, paprika"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"1 stick butter", item:"Butter", qty:0.25},
+        {text:"2 Tbsp flour", item:"Bread/all-purpose flour", qty:0.05},
+        {text:"3 cups milk", item:"Milk", qty:0.2},
+        {text:"4 oz Monterey Jack cheese", item:"Monterey Jack cheese", qty:0.5},
+        {text:"4 oz sharp cheddar cheese", item:"Sharp cheddar cheese", qty:0.5},
+        {text:"16 oz elbow macaroni", item:"Elbow macaroni", qty:1},
+        {text:"Salt, pepper, paprika", item:null, qty:0}
+      ]}
+    ],
     steps:["Boil the macaroni noodles.","Melt 1 stick of butter in a large skillet over medium heat.",
       "Put in the flour; mix.","Pour in the milk; add salt, pepper, and paprika.",
       "Once it thickens, add the Monterey Jack and sharp cheddar; let melt.",
       "Strain the noodles and add to the cheese sauce.","Broil the mac & cheese for 3–5 minutes."]},
   tacobowls:{title:"Ground Beef Taco Bowls", serves:"4", src:"spicedbites.com", url:"https://spicedbites.com/ground-beef-taco-bowls",
-    ing:[["","1 lb ground beef (85/15 or 90/10)","1 cup long-grain white rice, rinsed","2 cups water (for the rice)","2 Tbsp taco seasoning","1 can (15 oz) black beans, rinsed & drained","1 cup sweet corn (canned or frozen)","2 medium tomatoes, finely diced","2 cups iceberg lettuce, shredded","1/2 cup sour cream","1/4 cup fresh cilantro, chopped"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"1 lb ground beef (85/15 or 90/10)", item:"Ground beef", qty:1},
+        {text:"1 cup long-grain white rice, rinsed", item:"Long-grain white rice", qty:0.3},
+        {text:"2 cups water (for the rice)", item:null, qty:0},
+        {text:"2 Tbsp taco seasoning", item:"Taco seasoning", qty:1},
+        {text:"1 can (15 oz) black beans, rinsed & drained", item:"Black beans", qty:1},
+        {text:"1 cup sweet corn (canned or frozen)", item:"Sweet corn", qty:1},
+        {text:"2 medium tomatoes, finely diced", item:"Tomatoes", qty:2},
+        {text:"2 cups iceberg lettuce, shredded", item:"Iceberg lettuce", qty:0.5},
+        {text:"Sour cream", item:"Sour cream", qty:1},
+        {text:"Olive oil, for the skillet", item:"Olive oil", qty:0.05},
+        {text:"1/4 cup fresh cilantro, chopped", item:"Fresh cilantro", qty:0.3}
+      ]}
+    ],
     steps:["Cook the rice: rinse under cold water, combine with 2 cups water in a saucepan, and bring to a boil.",
       "Reduce heat to low, cover, and simmer 18 minutes. Let stand 5 minutes, then fluff.",
       "Prepare the beef: heat oil in a skillet over medium-high and brown the beef until crumbled and fully cooked, stirring in the taco seasoning.",
       "Assemble: place rice in bowls and arrange the beef, beans, corn, tomatoes, and lettuce in sections.",
       "Add a dollop of sour cream to the center and sprinkle with fresh cilantro."]},
   kfc:{title:"Homemade KFC Famous Bowl (Copycat)", serves:"4", src:"imhungryforthat.com", url:"https://imhungryforthat.com/kfc-famous-bowl-copycat-recipe/",
-    ing:[["","2 1/2 cups mashed potatoes","2 cups corn kernels (frozen)","10 oz popcorn chicken or chicken nuggets","1 cup shredded cheddar cheese","1/2 cup Heinz classic chicken gravy"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"2 1/2 cups mashed potatoes", item:"Instant mashed potatoes", qty:1},
+        {text:"2 cups corn kernels (frozen)", item:"Sweet corn", qty:1},
+        {text:"10 oz popcorn chicken or chicken nuggets", item:"Frozen popcorn chicken / nuggets", qty:1},
+        {text:"1 cup shredded cheddar cheese", item:"Shredded cheddar", qty:1},
+        {text:"1/2 cup Heinz classic chicken gravy", item:"Heinz classic chicken gravy", qty:1}
+      ]}
+    ],
     steps:["Preheat the oven to 350°F.",
       "Cook the popcorn chicken/nuggets in an air fryer at 390°F for 10 minutes (or bake per package directions).",
       "Prepare the mashed potatoes per package.",
@@ -524,8 +757,25 @@ const R = {
       "Bake 10–15 minutes, until the cheese melts.",
       "Transfer to bowls and top with gravy."]},
   pizza:{title:"Pepperoni Pizza (homemade dough)", serves:"4 (dough makes 2 crusts)", src:"foodnetwork.com + thekitchn.com", url:"https://www.thekitchn.com/pepperoni-pizza-22931782",
-    ing:[["Pizza Dough (Bobby Flay — makes 2 crusts)","3 1/2 – 4 cups bread flour, plus more for rolling","1 tsp sugar","1 envelope instant dry yeast","2 tsp kosher salt","1 1/2 cups water (110°F)","2 Tbsp olive oil, plus 2 tsp"],
-      ["Pepperoni Pizza (The Kitchn)","1 lb pizza dough, at room temperature","2 Tbsp olive oil","1/2 – 1 cup tomato sauce","1 cup shredded low-moisture mozzarella","1/2 cup grated Parmesan","2 oz pepperoni slices (about 1/2 cup)","Red pepper flakes, to serve (optional)"]],
+    ing:[
+      {heading:"Pizza Dough (Bobby Flay — makes 2 crusts)", rows:[
+        {text:"3 1/2 – 4 cups bread flour, plus more for rolling", item:"Bread/all-purpose flour", qty:0.2},
+        {text:"1 tsp sugar", item:null, qty:0},
+        {text:"1 envelope instant dry yeast", item:"Instant yeast", qty:1},
+        {text:"2 tsp kosher salt", item:null, qty:0},
+        {text:"1 1/2 cups water (110°F)", item:null, qty:0},
+        {text:"2 Tbsp olive oil, plus 2 tsp", item:null, qty:0}
+      ]},
+      {heading:"Pepperoni Pizza (The Kitchn)", rows:[
+        {text:"1 lb pizza dough, at room temperature", item:null, qty:0},
+        {text:"2 Tbsp olive oil", item:null, qty:0},
+        {text:"1/2 – 1 cup tomato sauce", item:"Pizza tomato sauce", qty:1},
+        {text:"1 cup shredded low-moisture mozzarella", item:"Shredded mozzarella", qty:1},
+        {text:"1/2 cup grated Parmesan", item:"Grated Parmesan", qty:0.3},
+        {text:"2 oz pepperoni slices (about 1/2 cup)", item:"Pepperoni", qty:1},
+        {text:"Red pepper flakes, to serve (optional)", item:null, qty:0}
+      ]}
+    ],
     steps:["DOUGH: Combine the bread flour, sugar, yeast, and salt in a stand mixer. With the mixer running, add the water and 2 Tbsp oil and beat until the dough forms a ball (add flour 1 Tbsp at a time if sticky, or water if dry). Knead on a floured surface into a smooth, firm ball.",
       "DOUGH: Grease a large bowl with the remaining 2 tsp oil, add the dough, cover with plastic wrap, and let it double in a warm spot, about 1 hour. Divide into 2 pieces, cover, and rest 10 minutes.",
       "PIZZA: Bring 1 lb dough to room temperature. Set a rack in the middle of the oven and heat to 450°F.",
@@ -533,13 +783,44 @@ const R = {
       "Spread 1/2 cup tomato sauce in a thin layer leaving a border (add more if desired). Sprinkle on the mozzarella and Parmesan, then lay the pepperoni in a single layer.",
       "Bake 15–20 minutes, until the edges are golden-brown and crispy and the cheese is melted. Rotate the pan halfway if your oven bakes unevenly. Cool 5 minutes, slice, and serve with red pepper flakes if desired."]},
   zuppa:{title:"Instant Pot Pesto Zuppa Toscana", serves:"6", src:"halfbakedharvest.com", url:"https://www.halfbakedharvest.com/instant-pot-pesto-zuppa-toscana/",
-    ing:[["","4 slices thick-cut bacon, chopped","3/4 lb ground spicy Italian chicken sausage","1 yellow onion, chopped","4 cloves garlic, minced or grated","2 ribs celery, chopped","4 small Yukon gold or russet potatoes, peeled & chopped","6 cups low-sodium chicken broth","1/3 cup basil pesto","Juice of 1 lemon","1 pinch crushed red pepper flakes","Kosher salt & black pepper","1 bunch Tuscan or curly kale, roughly chopped","3/4 cup heavy cream (or whole milk)","1/2 cup grated Parmesan or Asiago","Fresh thyme, to serve (optional)"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"4 slices thick-cut bacon, chopped", item:"Bacon", qty:0.5},
+        {text:"3/4 lb ground spicy Italian chicken sausage", item:"Ground spicy Italian chicken sausage", qty:1},
+        {text:"1 yellow onion, chopped", item:"Yellow onions", qty:1},
+        {text:"4 cloves garlic, minced or grated", item:"Garlic", qty:0.3},
+        {text:"2 ribs celery, chopped", item:"Celery", qty:1},
+        {text:"4 small Yukon gold or russet potatoes, peeled & chopped", item:"Yukon gold / russet potatoes", qty:1},
+        {text:"6 cups low-sodium chicken broth", item:"Chicken broth (low-sodium)", qty:1.5},
+        {text:"1/3 cup basil pesto", item:"Basil pesto", qty:1},
+        {text:"Juice of 1 lemon", item:"Lemon", qty:1},
+        {text:"1 pinch crushed red pepper flakes", item:null, qty:0},
+        {text:"Kosher salt & black pepper", item:null, qty:0},
+        {text:"Olive oil, for sautéing", item:"Olive oil", qty:0.05},
+        {text:"1 bunch Tuscan or curly kale, roughly chopped", item:"Kale (Tuscan or curly)", qty:1},
+        {text:"3/4 cup heavy cream (or whole milk)", item:"Heavy cream", qty:1},
+        {text:"1/2 cup grated Parmesan or Asiago", item:"Grated Parmesan", qty:0.2},
+        {text:"Fresh thyme, to serve (optional)", item:null, qty:0}
+      ]}
+    ],
     steps:["Set the Instant Pot to sauté. Add the bacon and cook until crisp, about 5 minutes. Remove the bacon. If there's excess grease, drain all but 1 Tbsp. Add the chicken sausage and onions and brown all over, 5–8 minutes. Add the garlic, celery, and potatoes and cook 2 minutes. Turn the Instant Pot off.",
       "Add the broth, pesto, lemon juice, red pepper flakes, and season with salt and pepper. Cover and cook on high pressure 8 minutes.",
       "Use natural or quick release. Set to sauté and stir in the kale, cream, and Parmesan. Cook until the kale is wilted, about 10 minutes. Turn off and stir in the reserved bacon.",
       "Serve topped with additional Parmesan and fresh thyme, if desired."]},
   porkloin:{title:"Best Damn Oven-Roasted Pork Loin", serves:"4–6", src:"recipeteacher.com", url:"https://recipeteacher.com/best-damn-oven-roasted-pork-loin/",
-    ing:[["","Pork loin roast, 2-3 lbs, boneless","1 Tbsp kosher salt","1 Tbsp Worcestershire sauce","1 tsp paprika","1 tsp onion powder","1 tsp garlic powder","1 tsp rosemary, dried and crushed","1 tsp black pepper, ground"]],
+    ing:[
+      {heading:"", rows:[
+        {text:"Pork loin roast, 2-3 lbs, boneless", item:"Pork loin roast (boneless)", qty:1},
+        {text:"1 Tbsp kosher salt", item:null, qty:0},
+        {text:"1 Tbsp Worcestershire sauce", item:"Worcestershire sauce", qty:0.1},
+        {text:"1 tsp paprika", item:null, qty:0},
+        {text:"1 tsp onion powder", item:null, qty:0},
+        {text:"1 tsp garlic powder", item:null, qty:0},
+        {text:"1 tsp rosemary, dried and crushed", item:null, qty:0},
+        {text:"1 tsp black pepper, ground", item:null, qty:0},
+        {text:"Olive oil (for the pan)", item:"Olive oil", qty:0.05}
+      ]}
+    ],
     steps:["Preheat oven to 425°F. Line a sheet pan with aluminum foil, spray with a little non-stick cooking spray, and set aside.",
       "Mix all dry ingredients in a small bowl and set aside.",
       "Trim any excess fat from the top of the pork loin roast. Place the roast on a large plate and coat with Worcestershire sauce, then with the dry seasonings. Rub liberally on all sides.",
@@ -926,6 +1207,15 @@ window.addEventListener("scroll",function(e){
 
 /* ============================ RECIPES ============================ */
 let recipeEdits = load('mp_recipeEdits_v1', {});   // { [recipeKey]: {ing, steps} } — user overrides, layered on top of R
+// One-time migration: any recipeEdits saved under the old free-text ing shape
+// (array of [heading, ...strings]) are superseded now that the corresponding
+// built-in recipe was rewritten directly with the new structured shape above.
+// An old-shape override would otherwise mask the new base data and break
+// rendering (rows are objects now, not strings).
+Object.keys(recipeEdits).forEach(k=>{
+  const groups = recipeEdits[k] && recipeEdits[k].ing;
+  if(groups && groups.length && Array.isArray(groups[0])) delete recipeEdits[k];
+});
 function saveRecipeEdits(){ save('mp_recipeEdits_v1', recipeEdits); }
 function recipeData(k){
   const base=R[k], edit=recipeEdits[k];
