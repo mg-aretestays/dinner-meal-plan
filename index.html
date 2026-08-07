@@ -1398,6 +1398,7 @@ function editRecipe(k){
   const rd = recipeData(k), base = baseRecipe(k);
   recipeDraft = {key:k, isNew:false, title:base.title, serves:base.serves, ing:cloneIng(rd.ing), steps:rd.steps.slice()};
   recipeEditKey = k;
+  newItemDraft = null;
   renderRecipeForm();
 }
 
@@ -1436,6 +1437,21 @@ function saveRecipeForm(){
     showRecipeDetail(k, recipeDetailScale);
     toast("Recipe saved");
   }
+}
+function deleteRecipe(k){
+  if(!customRecipes[k]) return;
+  if(!confirm("Delete this recipe? This can't be undone.")) return;
+  delete customRecipes[k];
+  saveCustomRecipes();
+  ['A','B'].forEach(slot=>{
+    let touched=false;
+    mealPlan[slot].forEach((mk,i)=>{ if(mk===k){ mealPlan[slot][i]=null; mealScale[slot][i]=1; touched=true; } });
+    if(touched){ saveMeals(slot); saveScale(slot); }
+  });
+  recipeDraft=null; newItemDraft=null; recipeEditKey=null;
+  hideRecipeDetail();
+  renderAllRecipes(); renderOverview(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
+  toast("Recipe deleted");
 }
 function ingHTML(groups){
   return groups.map(g=>{
