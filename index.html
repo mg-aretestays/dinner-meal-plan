@@ -1009,6 +1009,15 @@ function normalizeMenu(arr){
   while(a.length<14) a.push(null);
   return a.map(k => (k===LEFTOVERS || (k && baseRecipe(k))) ? k : null);
 }
+// Declared here (not down with its sibling saveCustomRecipes/baseRecipe/allRecipeKeys in
+// the RECIPES section) because mealPlan's own initializer below calls normalizeMenu, which
+// calls baseRecipe(k) — and baseRecipe reads customRecipes. For a built-in recipe key,
+// R[k] is truthy and the || short-circuits before touching customRecipes, so this was
+// invisible until a real custom-recipe key got stored in mealPlan and the page reloaded —
+// at that point customRecipes would still be in its temporal dead zone here, throwing a
+// ReferenceError that aborts the entire script (same class of bug as the
+// purgeStaleRecipeEdits/saveRecipeEdits TDZ crash fixed in commit 1b29506).
+let customRecipes = load('mp_customRecipes_v1', {});   // { [key]: {title, serves, ing, steps} } — user-created recipes
 let mealPlan = {
   A: normalizeMenu(load(ckMeals(CTX.A.key), null) || defaultMenu(CTX.A.key)),
   B: normalizeMenu(load(ckMeals(CTX.B.key), null) || defaultMenu(CTX.B.key))
@@ -1240,7 +1249,10 @@ function purgeStaleRecipeEdits(){
   });
 }
 function saveRecipeEdits(){ save('mp_recipeEdits_v1', recipeEdits); }
-let customRecipes = load('mp_customRecipes_v1', {});   // { [key]: {title, serves, ing, steps} } — user-created recipes
+// customRecipes itself is declared earlier (before mealPlan) to avoid a TDZ crash —
+// see the comment there for why. saveCustomRecipes/baseRecipe/allRecipeKeys (function
+// declarations, hoisted) stay here with the rest of the RECIPES section since only the
+// variable's own initialization needs to happen early, not these functions' definitions.
 function saveCustomRecipes(){ save('mp_customRecipes_v1', customRecipes); }
 function baseRecipe(k){ return R[k] || customRecipes[k]; }
 function allRecipeKeys(){
