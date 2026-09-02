@@ -1050,16 +1050,36 @@ let custom = { A:load(ckCustom(CTX.A.key),[]),  B:load(ckCustom(CTX.B.key),[]) }
 // Stored per period key (like checks/custom) so edits to "up next" carry over
 // automatically when that period rolls in to become the current cycle.
 const LEFTOVERS = "__leftovers__";   // sentinel meal value: a planned "leftovers" night, not a recipe
-// The system-assigned plan for a period: every recipe in the library (built-in +
-// custom), shuffled deterministically by that period's key, first 14 taken. Since
-// it's a random subset of unique keys, no meal repeats within the 14-day cycle —
-// as long as the library holds at least 14 recipes. Below that (unlikely), cycle
-// back through the shuffled pool so every day still gets a meal; repeats become
-// unavoidable once the whole library is exhausted.
+// Weekly cadence: two recipe nights, then a leftovers night, repeating — so within
+// each 7-day week, days 3 and 6 (0-indexed 2 and 5) are leftovers. i%7 re-starts the
+// pattern at the cycle's day-8 week boundary for free. 4 leftover nights + 10 recipe
+// nights per 14-day cycle.
+function isLeftoverSlot(i){ const d=i%7; return d===2 || d===5; }
+// Recipe keys actually used across a period's plan (leftover nights and empty days
+// don't count) — used so the *next* cycle's draw can avoid repeating them. Falls
+// back to the deterministic default for a period nobody ever actually saved a plan
+// for (a skipped stretch, or a brand-new install with no history yet).
+function recipesUsedIn(key){
+  const arr = load(ckMeals(key), null) || defaultMenu(key);
+  return arr.filter(k => k && k!==LEFTOVERS);
+}
+// The system-assigned plan for a period: recipe nights are filled from the full
+// library (built-in + custom), shuffled deterministically by that period's key,
+// with whatever the *previous* cycle used filtered to the back of the line so
+// this cycle prefers fresh recipes first — falling back to repeats only if
+// filtering out the previous cycle's picks doesn't leave enough to fill the week
+// (the library would have to shrink well below 10 recipes for that to happen).
+// Leftover nights are placed by isLeftoverSlot and never draw from the pool.
 function defaultMenu(key){
+  const exclude = key>0 ? new Set(recipesUsedIn(key-1)) : new Set();
   const pool = seededShuffle(key, allRecipeKeys());
-  if(pool.length>=14) return pool.slice(0,14);
-  const out=[]; for(let i=0;i<14;i++) out.push(pool[i%pool.length]);
+  const ordered = pool.filter(k=>!exclude.has(k)).concat(pool.filter(k=>exclude.has(k)));
+  const out=[]; let pi=0;
+  for(let i=0;i<14;i++){
+    if(isLeftoverSlot(i)){ out.push(LEFTOVERS); continue; }
+    out.push(ordered[pi % ordered.length]);
+    pi++;
+  }
   return out;
 }
 function normalizeMenu(arr){
