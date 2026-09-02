@@ -873,9 +873,29 @@ const R = {
       "Transfer to a serving platter, sprinkle with toasted sesame seeds and sliced green onions, and serve immediately with steamed rice, roasted vegetables, or a green salad."]}
 };
 
-/* ============================ MENUS (rotate by period parity) ============================ */
-const MENU_1 = ["bpc","spaghetti","snackwraps","mac","crunchwraps","garlicbroccoli","pizza","porkloin","tacos","thainoodles","alfredo","burgers","stirfry","breakfast"];
-const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","pork"];
+/* ============================ MENUS (randomized per 2-week period) ============================ */
+// Each 14-day cycle gets a shuffled draw from the full recipe library, seeded by that
+// cycle's period key so the "random" plan is actually deterministic: every device
+// computes the identical draw for a given period without needing to coordinate over
+// sync, and reloading the page never reshuffles a plan you've already seen.
+// mulberry32 — small, fast, good-enough distribution for this (not cryptographic).
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function seededShuffle(seed, arr){
+  const rand = mulberry32(seed), out = arr.slice();
+  for(let i=out.length-1;i>0;i--){
+    const j = Math.floor(rand()*(i+1));
+    [out[i],out[j]] = [out[j],out[i]];
+  }
+  return out;
+}
 
 /* ============================ GROCERY (one per menu) ============================ */
 // Master grocery catalog — purchasable items only. Each item is bought in
@@ -991,7 +1011,6 @@ const GITEMS = [
 let customItems = load('mp_customItems_v1', []);   // [{n, sec, unit, divisible, always, price}] — user-created catalog items
 function saveCustomItems(){ save('mp_customItems_v1', customItems); }
 function allItems(){ return GITEMS.concat(customItems); }
-function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_1} : {menu:MENU_2}; }
 
 /* ============================ DATES / ROTATION ============================ */
 const ANCHOR = new Date(2026,0,4);              // Sunday, Jan 4 2026 — period 0 start
@@ -1011,8 +1030,8 @@ const B_END   = addDays(ANCHOR, (PERIOD+2)*14 - 1);
 
 // slot context: dataset + storage period key + start date
 const CTX = {
-  A:{...datasetForPeriod(PERIOD),   key:PERIOD,   start:A_START, end:addDays(A_START,13)},
-  B:{...datasetForPeriod(PERIOD+1), key:PERIOD+1, start:B_START, end:B_END}
+  A:{key:PERIOD,   start:A_START, end:addDays(A_START,13)},
+  B:{key:PERIOD+1, start:B_START, end:B_END}
 };
 
 /* ============================ STORAGE ============================ */
@@ -1031,7 +1050,18 @@ let custom = { A:load(ckCustom(CTX.A.key),[]),  B:load(ckCustom(CTX.B.key),[]) }
 // Stored per period key (like checks/custom) so edits to "up next" carry over
 // automatically when that period rolls in to become the current cycle.
 const LEFTOVERS = "__leftovers__";   // sentinel meal value: a planned "leftovers" night, not a recipe
-function defaultMenu(key){ return datasetForPeriod(key).menu.slice(); }
+// The system-assigned plan for a period: every recipe in the library (built-in +
+// custom), shuffled deterministically by that period's key, first 14 taken. Since
+// it's a random subset of unique keys, no meal repeats within the 14-day cycle —
+// as long as the library holds at least 14 recipes. Below that (unlikely), cycle
+// back through the shuffled pool so every day still gets a meal; repeats become
+// unavoidable once the whole library is exhausted.
+function defaultMenu(key){
+  const pool = seededShuffle(key, allRecipeKeys());
+  if(pool.length>=14) return pool.slice(0,14);
+  const out=[]; for(let i=0;i<14;i++) out.push(pool[i%pool.length]);
+  return out;
+}
 function normalizeMenu(arr){
   const a=(arr||[]).slice(0,14);
   while(a.length<14) a.push(null);
