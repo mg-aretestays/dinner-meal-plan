@@ -843,12 +843,59 @@ const R = {
       "Trim any excess fat from the top of the pork loin roast. Place the roast on a large plate and coat with Worcestershire sauce, then with the dry seasonings. Rub liberally on all sides.",
       "Place the seasoned pork roast fat-side-up on the foil-lined sheet pan and roast at 425°F for 15 minutes.",
       "After 15 minutes, reduce heat to 375°F and continue roasting about 45 minutes, or until the internal temperature at the center reaches 145°F.",
-      "Remove from the oven and tent loosely with foil for 5–10 minutes before serving."]}
+      "Remove from the oven and tent loosely with foil for 5–10 minutes before serving."]},
+  salmonbites:{title:"Honey Garlic Salmon Bites", serves:"4", src:"reciyo.com", url:"https://reciyo.com/honey-garlic-salmon-bites-easy-flavorful-dinner/",
+    ing:[
+      {heading:"", rows:[
+        {text:"1.5 lbs fresh salmon fillets, skinless", item:"Salmon", qty:1.5},
+        {text:"1 Tbsp olive oil", item:"Olive oil", qty:0.05},
+        {text:"Salt and black pepper, to taste", item:null, qty:0},
+        {text:"1/2 cup low-sodium soy sauce", item:"Light soy sauce", qty:0.2},
+        {text:"1/2 cup honey", item:"Honey", qty:0.4},
+        {text:"4-5 cloves garlic, minced", item:"Garlic", qty:0.35},
+        {text:"1 Tbsp fresh ginger, grated", item:"Fresh ginger", qty:0.5},
+        {text:"1 Tbsp rice vinegar", item:"Rice vinegar", qty:0.05},
+        {text:"1-2 tsp Sriracha or chili garlic sauce (optional)", item:"Sriracha", qty:0.05},
+        {text:"1 tsp sesame oil", item:"Toasted sesame oil", qty:0.05},
+        {text:"1 Tbsp cornstarch", item:"Cornstarch", qty:0.2},
+        {text:"2 Tbsp cold water", item:null, qty:0},
+        {text:"1 Tbsp toasted sesame seeds (for garnish)", item:"Sesame seeds", qty:0.1},
+        {text:"2-3 green onions, sliced (for garnish)", item:"Green onions", qty:0.4}
+      ]}
+    ],
+    steps:["Pat the salmon fillets completely dry, remove the skin, and cut into uniform 1 to 1.5-inch cubes. Season lightly with salt and freshly ground black pepper.",
+      "In a medium bowl, whisk together the soy sauce, honey, rice vinegar, Sriracha (if using), and sesame oil. Stir in the garlic and ginger until well combined.",
+      "In a small bowl, whisk the cornstarch with the cold water until no lumps remain, creating a slurry.",
+      "Pour about half of the honey garlic sauce over the seasoned salmon and gently toss to coat. Let marinate at room temperature for 10-15 minutes. Set the remaining sauce aside.",
+      "Heat the olive oil in a large non-stick or cast-iron skillet over medium-high heat until shimmering. Add the marinated salmon in batches, without overcrowding the pan, and cook 2-3 minutes per side until golden brown and cooked through. Transfer to a plate.",
+      "Reduce the heat to medium-low and pour the reserved sauce into the pan. Bring to a gentle simmer, whisk the cornstarch slurry again, then stir it into the sauce. Cook, stirring, until the glaze thickens and turns glossy, about 30-60 seconds.",
+      "Return the salmon bites to the pan and gently toss to coat every piece in the glaze. Cook another minute to let the flavors meld.",
+      "Transfer to a serving platter, sprinkle with toasted sesame seeds and sliced green onions, and serve immediately with steamed rice, roasted vegetables, or a green salad."]}
 };
 
-/* ============================ MENUS (rotate by period parity) ============================ */
-const MENU_1 = ["bpc","spaghetti","snackwraps","mac","crunchwraps","garlicbroccoli","pizza","porkloin","tacos","thainoodles","alfredo","burgers","stirfry","breakfast"];
-const MENU_2 = ["padthai","helper","bpc","garlicpasta","tacobowls","alfredo","pizza","zuppa","tacos","burgers","kfc","spaghetti","mac","pork"];
+/* ============================ MENUS (randomized per 2-week period) ============================ */
+// Each 14-day cycle gets a shuffled draw from the full recipe library, seeded by that
+// cycle's period key so the "random" plan is actually deterministic: every device
+// computes the identical draw for a given period without needing to coordinate over
+// sync, and reloading the page never reshuffles a plan you've already seen.
+// mulberry32 — small, fast, good-enough distribution for this (not cryptographic).
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function seededShuffle(seed, arr){
+  const rand = mulberry32(seed), out = arr.slice();
+  for(let i=out.length-1;i>0;i--){
+    const j = Math.floor(rand()*(i+1));
+    [out[i],out[j]] = [out[j],out[i]];
+  }
+  return out;
+}
 
 /* ============================ GROCERY (one per menu) ============================ */
 // Master grocery catalog — purchasable items only. Each item is bought in
@@ -870,6 +917,7 @@ const GITEMS = [
   {n:"Frozen popcorn chicken / nuggets", sec:"🥩 Meat & Seafood", price:5.99, unit:"bag"},
   {n:"Frozen meatballs", sec:"🥩 Meat & Seafood", price:5.49, unit:"bag"},
   {n:"Pepperoni", sec:"🥩 Meat & Seafood", price:3.49, unit:"pkg"},
+  {n:"Salmon", sec:"🥩 Meat & Seafood", price:9.99, unit:"lb", divisible:true},
   // 🥦 Produce
   {n:"Yellow onions", sec:"🥦 Produce", price:0.50, unit:"onion"},
   {n:"Red onion", sec:"🥦 Produce", price:0.79, unit:"onion"},
@@ -963,7 +1011,6 @@ const GITEMS = [
 let customItems = load('mp_customItems_v1', []);   // [{n, sec, unit, divisible, always, price}] — user-created catalog items
 function saveCustomItems(){ save('mp_customItems_v1', customItems); }
 function allItems(){ return GITEMS.concat(customItems); }
-function datasetForPeriod(p){ return (((p%2)+2)%2)===0 ? {menu:MENU_1} : {menu:MENU_2}; }
 
 /* ============================ DATES / ROTATION ============================ */
 const ANCHOR = new Date(2026,0,4);              // Sunday, Jan 4 2026 — period 0 start
@@ -983,8 +1030,8 @@ const B_END   = addDays(ANCHOR, (PERIOD+2)*14 - 1);
 
 // slot context: dataset + storage period key + start date
 const CTX = {
-  A:{...datasetForPeriod(PERIOD),   key:PERIOD,   start:A_START, end:addDays(A_START,13)},
-  B:{...datasetForPeriod(PERIOD+1), key:PERIOD+1, start:B_START, end:B_END}
+  A:{key:PERIOD,   start:A_START, end:addDays(A_START,13)},
+  B:{key:PERIOD+1, start:B_START, end:B_END}
 };
 
 /* ============================ STORAGE ============================ */
@@ -1003,7 +1050,38 @@ let custom = { A:load(ckCustom(CTX.A.key),[]),  B:load(ckCustom(CTX.B.key),[]) }
 // Stored per period key (like checks/custom) so edits to "up next" carry over
 // automatically when that period rolls in to become the current cycle.
 const LEFTOVERS = "__leftovers__";   // sentinel meal value: a planned "leftovers" night, not a recipe
-function defaultMenu(key){ return datasetForPeriod(key).menu.slice(); }
+// Weekly cadence: two recipe nights, then a leftovers night, repeating — so within
+// each 7-day week, days 3 and 6 (0-indexed 2 and 5) are leftovers. i%7 re-starts the
+// pattern at the cycle's day-8 week boundary for free. 4 leftover nights + 10 recipe
+// nights per 14-day cycle.
+function isLeftoverSlot(i){ const d=i%7; return d===2 || d===5; }
+// Recipe keys actually used across a period's plan (leftover nights and empty days
+// don't count) — used so the *next* cycle's draw can avoid repeating them. Falls
+// back to the deterministic default for a period nobody ever actually saved a plan
+// for (a skipped stretch, or a brand-new install with no history yet).
+function recipesUsedIn(key){
+  const arr = load(ckMeals(key), null) || defaultMenu(key);
+  return arr.filter(k => k && k!==LEFTOVERS);
+}
+// The system-assigned plan for a period: recipe nights are filled from the full
+// library (built-in + custom), shuffled deterministically by that period's key,
+// with whatever the *previous* cycle used filtered to the back of the line so
+// this cycle prefers fresh recipes first — falling back to repeats only if
+// filtering out the previous cycle's picks doesn't leave enough to fill the week
+// (the library would have to shrink well below 10 recipes for that to happen).
+// Leftover nights are placed by isLeftoverSlot and never draw from the pool.
+function defaultMenu(key){
+  const exclude = key>0 ? new Set(recipesUsedIn(key-1)) : new Set();
+  const pool = seededShuffle(key, allRecipeKeys());
+  const ordered = pool.filter(k=>!exclude.has(k)).concat(pool.filter(k=>exclude.has(k)));
+  const out=[]; let pi=0;
+  for(let i=0;i<14;i++){
+    if(isLeftoverSlot(i)){ out.push(LEFTOVERS); continue; }
+    out.push(ordered[pi % ordered.length]);
+    pi++;
+  }
+  return out;
+}
 function normalizeMenu(arr){
   const a=(arr||[]).slice(0,14);
   while(a.length<14) a.push(null);
