@@ -873,7 +873,23 @@ const R = {
       "Place a trivet in the pot with 1 cup water and set the pork on top.",
       "Lock the lid, set the vent to sealing, and cook on manual/high pressure for 65 minutes.",
       "Let the pressure release naturally for 15 minutes, then release any remaining pressure. If the pork doesn't shred easily, cook 10–15 minutes longer.",
-      "Shred the pork and stir in BBQ sauce if desired."]}
+      "Shred the pork and stir in BBQ sauce if desired."]},
+  costcopeppers:{title:"Costco Stuffed Bell Peppers", serves:"4", src:"Costco", url:"",
+    ing:[
+      {heading:"", rows:[
+        {text:"1 package Costco stuffed bell peppers", item:"Costco stuffed bell peppers", qty:1}
+      ]}
+    ],
+    steps:["Heat the stuffed peppers following the cooking directions on the package.",
+      "Let rest a few minutes, then serve."]},
+  costcolasagna:{title:"Costco Lasagna", serves:"6", src:"Costco", url:"",
+    ing:[
+      {heading:"", rows:[
+        {text:"1 Costco lasagna", item:"Costco lasagna", qty:1}
+      ]}
+    ],
+    steps:["Heat the lasagna following the cooking directions on the package.",
+      "Let rest 10 minutes so it holds together when cut, then serve."]}
 };
 
 /* ============================ MENUS (randomized per 2-week period) ============================ */
@@ -1004,6 +1020,9 @@ const GITEMS = [
   {n:"Pancake mix", sec:"🌮 Bread, Tortillas & Mix", price:2.49, unit:"box"},
   {n:"Pancake/maple syrup", sec:"🌮 Bread, Tortillas & Mix", price:2.99, unit:"bottle"},
   {n:"Taco seasoning", sec:"🌮 Bread, Tortillas & Mix", price:1.00, unit:"packet"},
+  // 🧊 Costco Prepared
+  {n:"Costco stuffed bell peppers", sec:"🧊 Costco Prepared", price:14.99, unit:"package"},
+  {n:"Costco lasagna", sec:"🧊 Costco Prepared", price:19.99, unit:"tray"},
   // 🧂 Spice Rack
   {n:"Spice-rack restock", sec:"🧂 Spice Rack (likely on hand)", price:3.00, unit:"trip", always:true, note:"Buy what you're out of — pepper, paprika, garlic/onion powder, thyme, cumin, cayenne, sugar, Italian seasoning, red pepper flakes"}
 ];
@@ -1370,26 +1389,68 @@ function draftSetItem(gi,ri,val){
   renderIngredientBuilder();
 }
 function draftCancelNewItem(){ newItemDraft=null; renderIngredientBuilder(); }
+function readItemForm(idp){
+  const g=id=>document.getElementById(idp+id);
+  const secSel=g('Sec').value, secOther=(g('SecOther').value||"").trim();
+  const priceEl=g('Price'), priceRaw=priceEl?parseFloat(priceEl.value):NaN;
+  return {
+    n:(g('Name').value||"").trim(),
+    sec: secSel==="__other__" ? (secOther||"Other") : secSel,
+    unit:(g('Unit').value||"").trim()||"item",
+    divisible:g('Divisible').checked,
+    always:g('Always').checked,
+    price:(isNaN(priceRaw)||priceRaw<0)?0:priceRaw
+  };
+}
 function draftSaveNewItem(){
-  const n=(document.getElementById('newItemName').value||"").trim();
-  if(!n){ toast("Item name required"); return; }
-  if(allItems().some(i=>i.n.toLowerCase()===n.toLowerCase())){ toast("An item with that name already exists"); return; }
-  const secSel=document.getElementById('newItemSec').value;
-  const secOther=(document.getElementById('newItemSecOther').value||"").trim();
-  const sec = secSel==="__other__" ? (secOther||"Other") : secSel;
-  const unit=(document.getElementById('newItemUnit').value||"").trim()||"item";
-  const divisible=document.getElementById('newItemDivisible').checked;
-  const always=document.getElementById('newItemAlways').checked;
-  const priceRaw=parseFloat(document.getElementById('newItemPrice').value);
-  const price=(isNaN(priceRaw)||priceRaw<0)?0:priceRaw;
-  customItems.push({n, sec, unit, divisible, always, price});
+  const f=readItemForm('newItem');
+  if(!f.n){ toast("Item name required"); return; }
+  if(allItems().some(i=>i.n.toLowerCase()===f.n.toLowerCase())){ toast("An item with that name already exists"); return; }
+  customItems.push({n:f.n, sec:f.sec, unit:f.unit, divisible:f.divisible, always:f.always, price:f.price});
   saveCustomItems();
   buildCatalog(); initPrices();
   const {gi,ri}=newItemDraft;
-  recipeDraft.ing[gi].rows[ri].item=n;
+  recipeDraft.ing[gi].rows[ri].item=f.n;
   newItemDraft=null;
   renderIngredientBuilder();
+  renderCatalog();
   toast("Item added");
+}
+
+/* ---- Editing an existing user-created grocery item (rename / re-section / re-unit) ---- */
+let itemEdit = null;   // {name, where:'recipe'|'prices'} while editing a custom item; null otherwise
+function isCustomItem(n){ return customItems.some(i=>i.n===n); }
+function startItemEdit(n,where){ itemEdit={name:n,where}; newItemDraft=null; renderIngredientBuilder(); renderCatalog(); }
+function cancelItemEdit(){ itemEdit=null; renderIngredientBuilder(); renderCatalog(); }
+function saveItemEdit(){
+  const it = itemEdit && customItems.find(i=>i.n===itemEdit.name);
+  if(!it){ itemEdit=null; return; }
+  const old=it.n, oldId=gid(it.sec,old);
+  const f=readItemForm(itemEdit.where==='recipe'?'editItem':'priceItem');
+  if(!f.n){ toast("Item name required"); return; }
+  if(allItems().some(i=>i!==it && i.n.toLowerCase()===f.n.toLowerCase())){ toast("An item with that name already exists"); return; }
+  it.n=f.n; it.sec=f.sec; it.unit=f.unit; it.divisible=f.divisible; it.always=f.always;
+  if(f.n!==old){
+    // price/store/unit selections are keyed by item name — carry them over
+    [prices,storeSel,unitSel].forEach(m=>{ if(m[old]!==undefined){ m[f.n]=m[old]; delete m[old]; } });
+    save(LS.prices,prices); save(LS.store,storeSel); save(LS.unit,unitSel);
+    // recipe rows link to the item by name — repoint them (incl. an open draft)
+    const relink=ing=>ing.forEach(g=>g.rows.forEach(r=>{ if(r.item===old) r.item=f.n; }));
+    Object.values(customRecipes).forEach(r=>relink(r.ing));
+    Object.values(recipeEdits).forEach(e=>{ if(e && e.ing) relink(e.ing); });
+    if(recipeDraft) relink(recipeDraft.ing);
+    saveCustomRecipes(); saveRecipeEdits();
+  }
+  // grocery check-off ids embed section + name — carry checked state over
+  const newId=gid(it.sec,it.n);
+  if(newId!==oldId) ['A','B'].forEach(slot=>{
+    if(checks[slot][oldId]){ checks[slot][newId]=checks[slot][oldId]; delete checks[slot][oldId]; save(ckChecks(CTX[slot].key),checks[slot]); }
+  });
+  saveCustomItems();
+  itemEdit=null;
+  buildCatalog(); ensureDefaults();
+  renderIngredientBuilder(); renderCatalog(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
+  toast("Item updated");
 }
 function renderIngRowEditor(gi,ri,r){
   const opts = allItems().map(i=>`<option value="${escHTML(i.n)}" ${r.item===i.n?'selected':''}>${escHTML(i.n)}</option>`).join("");
@@ -1404,27 +1465,35 @@ function renderIngRowEditor(gi,ri,r){
       <option value="__new__">+ Create new item…</option>
     </select>
     ${qtyField}
+    ${(linkedItem && isCustomItem(linkedItem.n)) ? `<button type="button" class="btn-reset" title="Edit this grocery item" onclick="startItemEdit('${escHTML(esc(linkedItem.n))}','recipe')">✏️ Edit item</button>` : ""}
     <button type="button" class="remove-x" title="Remove line" onclick="draftRemoveRow(${gi},${ri})">✕</button>
   </div>`;
 }
-function renderNewItemForm(){
-  if(!newItemDraft) return "";
+function itemFormHTML(idp, v, isEdit, saveCall, cancelCall){
   const secs = distinctSections();
   return `<div class="new-item-form">
-    <div class="ai-title">➕ New grocery item</div>
-    <input type="text" id="newItemName" placeholder="Item name">
-    <select id="newItemSec" onchange="document.getElementById('newItemSecOther').style.display=(this.value==='__other__'?'inline-block':'none')">
-      ${secs.map(s=>`<option value="${escHTML(s)}">${escHTML(s)}</option>`).join("")}
+    <div class="ai-title">${isEdit?'✏️ Edit grocery item':'➕ New grocery item'}</div>
+    <input type="text" id="${idp}Name" placeholder="Item name" value="${escHTML(v.n||"")}">
+    <select id="${idp}Sec" onchange="document.getElementById('${idp}SecOther').style.display=(this.value==='__other__'?'inline-block':'none')">
+      ${secs.map(s=>`<option value="${escHTML(s)}" ${s===v.sec?'selected':''}>${escHTML(s)}</option>`).join("")}
       <option value="__other__">Other…</option>
     </select>
-    <input type="text" id="newItemSecOther" placeholder="New section name" style="display:none">
-    <input type="text" id="newItemUnit" placeholder="Unit (e.g. jar, bag, lb)">
-    <label><input type="checkbox" id="newItemDivisible"> fractional amounts allowed</label>
-    <label><input type="checkbox" id="newItemAlways"> always needed, not recipe-specific</label>
-    <input type="number" step="0.01" min="0" id="newItemPrice" placeholder="Starting price">
-    <button type="button" class="btn-edit" onclick="draftSaveNewItem()">Save item</button>
-    <button type="button" class="btn-reset" onclick="draftCancelNewItem()">Cancel</button>
+    <input type="text" id="${idp}SecOther" placeholder="New section name" style="display:none">
+    <input type="text" id="${idp}Unit" placeholder="Unit (e.g. jar, bag, lb)" value="${escHTML(v.unit||"")}">
+    <label><input type="checkbox" id="${idp}Divisible" ${v.divisible?'checked':''}> fractional amounts allowed</label>
+    <label><input type="checkbox" id="${idp}Always" ${v.always?'checked':''}> always needed, not recipe-specific</label>
+    ${isEdit ? "" : `<input type="number" step="0.01" min="0" id="${idp}Price" placeholder="Starting price">`}
+    <button type="button" class="btn-edit" onclick="${saveCall}">${isEdit?'Save changes':'Save item'}</button>
+    <button type="button" class="btn-reset" onclick="${cancelCall}">Cancel</button>
   </div>`;
+}
+function renderNewItemForm(){
+  if(itemEdit && itemEdit.where==='recipe'){
+    const it=customItems.find(i=>i.n===itemEdit.name);
+    if(it) return itemFormHTML('editItem', it, true, 'saveItemEdit()', 'cancelItemEdit()');
+  }
+  if(!newItemDraft) return "";
+  return itemFormHTML('newItem', {}, false, 'draftSaveNewItem()', 'draftCancelNewItem()');
 }
 function renderIngredientBuilder(){
   const el = document.getElementById('ingredientBuilder');
@@ -1454,7 +1523,7 @@ function genRecipeKey(title){
 
 function addRecipeClicked(){
   recipeDraft = {key:null, isNew:true, title:"", serves:"", ing:[newIngGroup("")], steps:[]};
-  newItemDraft=null; recipeEditKey=null;
+  newItemDraft=null; recipeEditKey=null; itemEdit=null;
   renderRecipeForm();
 }
 
@@ -1487,7 +1556,7 @@ function editRecipe(k){
   const rd = recipeData(k), base = baseRecipe(k);
   recipeDraft = {key:k, isNew:false, title:base.title, serves:base.serves, ing:cloneIng(rd.ing), steps:rd.steps.slice()};
   recipeEditKey = k;
-  newItemDraft = null;
+  newItemDraft = null; itemEdit = null;
   renderRecipeForm();
 }
 
@@ -1729,9 +1798,12 @@ function renderStapleRows(){
 function renderCatalog(){
   document.getElementById("priceCatalog").innerHTML = CATALOG.map(s=>{
     const rows = s.items.map(it=>{ const val=prices[it.n][storeSel[it.n]];
-      return `<tr><td>${it.n}</td><td>${unitDropdown(it.n)}</td><td>${storeDropdown(it.n)}</td>
+      const editBtn = isCustomItem(it.n) ? ` <button type="button" class="btn-reset" title="Edit this item" onclick="startItemEdit('${escHTML(esc(it.n))}','prices')">✏️</button>` : "";
+      const editing = itemEdit && itemEdit.where==='prices' && itemEdit.name===it.n;
+      const editRow = editing ? `<tr><td colspan="4">${itemFormHTML('priceItem', customItems.find(i=>i.n===it.n), true, 'saveItemEdit()', 'cancelItemEdit()')}</td></tr>` : "";
+      return `<tr><td>${escHTML(it.n)}${editBtn}</td><td>${unitDropdown(it.n)}</td><td>${storeDropdown(it.n)}</td>
       <td class="price-cell"><span class="price-input"><span>$</span><input type="number" step="0.01" min="0"
-        value="${val.toFixed(2)}" oninput="onPriceChange('${esc(it.n)}',this.value)"></span></td></tr>`; }).join("");
+        value="${val.toFixed(2)}" oninput="onPriceChange('${esc(it.n)}',this.value)"></span></td></tr>${editRow}`; }).join("");
     return `<div class="staple-card"><h3>${s.sec}</h3><table class="staples">
       <thead><tr><th>Item</th><th>Unit</th><th>Store</th><th class="price-cell">Price</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }).join("");
