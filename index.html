@@ -225,6 +225,15 @@
   .install-banner button{border:none;border-radius:8px;padding:8px 13px;font-weight:700;cursor:pointer;font-size:.85rem;flex:none}
   .install-banner #installBtn{background:#fff;color:var(--accentA)}
   .install-banner #installClose{background:rgba(255,255,255,.22);color:#fff;margin-left:auto}
+  .or-sub{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 16px;align-items:center}
+  .or-sub button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 13px;border-radius:999px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit}
+  .or-sub button:hover{border-color:var(--accentA)}
+  .or-sub button.active{background:var(--accentA);color:#fff;border-color:var(--accentA)}
+  .or-sub button.or-add{border-style:dashed;color:var(--accentA)}
+  .or-sub .or-x{padding:7px 9px;color:var(--muted)}
+  .or-tags{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:10px;font-size:.88rem}
+  .or-tags label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+  .or-field{display:block;width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.92rem;font-family:inherit;color:var(--ink);margin-bottom:8px}
   @media print{nav.tabs,.btn-reset,.additem,.remove-x,.install-banner{display:none}section.panel{display:block!important}}
 </style>
 </head>
@@ -252,6 +261,7 @@
     <button data-t="groceryB">Cycle B Grocery</button>
     <button data-t="prices">Prices</button>
     <button data-t="recipes">Recipes</button>
+    <button data-t="otherRecipes">Other Recipes</button>
   </nav>
 
   <section class="panel active" id="overview">
@@ -357,6 +367,13 @@
     <p class="lead">Every recipe in the rotation. Tap a title to open its full ingredients and instructions.</p>
     <div id="recipeIndex"></div>
     <div id="recipeDetail" style="display:none"></div>
+  </section>
+
+  <section class="panel" id="otherRecipes">
+    <h2 class="section-title">Other Recipes</h2>
+    <p class="lead">Appetizers, sourdough, dessert, snacks — anything that isn't a dinner main. These stay out of the two-week rotation and the grocery lists.</p>
+    <div id="orSub" class="or-sub"></div>
+    <div id="orBody"></div>
   </section>
 
   <footer>
@@ -1890,6 +1907,163 @@ function openRecipe(k,slot,i){
   showRecipeDetail(k, scale);
 }
 
+/* ============================ OTHER RECIPES ============================ */
+// Non-dinner recipes (appetizers, sourdough, dessert, snacks, plus user-made tabs). Kept in their
+// own stores so they never enter allRecipeKeys(), the meal rotation, or the grocery lists.
+// Ingredients are plain text lines; "Heading:" lines start a new group.
+const OR_DEFAULT_CATS = [{id:"appetizers",name:"Appetizers"},{id:"sourdough",name:"Sourdough"},{id:"dessert",name:"Dessert"},{id:"snacks",name:"Snacks"}];
+const OR_BUILTIN = {
+  "sourdough-easy-bread":{cats:["sourdough"], title:"Easy Sourdough Bread", serves:"1 large loaf", src:"blessthismessplease.com", url:"https://www.blessthismessplease.com/easy-sourdough-bread-recipe/",
+    ing:[{heading:"", rows:[
+      {text:"50 g active sourdough starter (1/4 cup)"},
+      {text:"350 g warm water (1 1/3 cups plus 2 Tbsp)"},
+      {text:"500 g all-purpose or bread flour (4 cups plus 2 Tbsp)"},
+      {text:"10 g salt (1 1/2 tsp)"}]}],
+    steps:[
+      "Feed your starter the morning before or a few hours ahead, and use it at its peak, before it starts to fall.",
+      "Put the starter in a medium bowl and stir in the warm water with a fork until well combined.",
+      "Add the flour and salt and mix until no dry bits remain. It won't look like finished bread yet.",
+      "Cover with a damp towel and rest 1 hour at room temperature.",
+      "Pull the dough edges down into the center while turning the bowl, about 1 minute, until it forms a rough ball.",
+      "Cover with a damp towel and let it rise 8–10 hours at room temperature (the bulk rise), often overnight.",
+      "Turn the dough onto a lightly floured surface, tuck the edges into the middle, flip it over, and rest 5–10 minutes.",
+      "Pull the dough toward you against the counter to tighten it into a firm ball.",
+      "Dust a proofing basket well with flour, or use an 8-inch bowl that's greased and floured or lined with a floured towel.",
+      "Place the dough smooth side down in the basket, cover with a damp towel, and rest 1–2 hours until slightly spread and puffy.",
+      "Preheat the oven to 450°F.",
+      "Turn the dough onto parchment paper and score the top with a lame or a sharp or serrated knife.",
+      "Use the parchment to lower the dough into a Dutch oven and cover with the lid.",
+      "Bake covered 30 minutes, then uncover and bake 20–30 minutes more, until very dark and hollow-sounding when tapped.",
+      "Cool on a wire rack at least 1 hour before slicing."],
+    note:"If the bottom crust browns too much, drop the oven temperature by 25°F. To refresh your starter after mixing, keep 25 g of leftover starter and feed it 50 g water and 50 g flour. Best the day it's baked; leftovers make great toast."}
+};
+let otherRecipes = load('mp_otherRecipes_v1', {});   // { [key]: recipe } — user-created, or edited copies of built-ins
+let otherCats = load('mp_otherCats_v1', []);         // [{id,name}] — user-added tabs
+function saveOther(){ save('mp_otherRecipes_v1', otherRecipes); save('mp_otherCats_v1', otherCats); }
+let orCat = "all", orView = null;   // active sub-tab; null | {k} detail | {draft} form
+function orAllCats(){ return OR_DEFAULT_CATS.concat(otherCats); }
+function orCatName(id){ const c=orAllCats().find(c=>c.id===id); return c?c.name:"Other"; }
+// A recipe belongs to one or more tabs: r.cats (array). Older saves used r.cat (string).
+function orCatsOf(r){ return r.cats || (r.cat ? [r.cat] : []); }
+function orCatNames(r){ return orCatsOf(r).map(orCatName).join(", "); }
+function orAll(){ return Object.assign({}, OR_BUILTIN, otherRecipes); }
+function orKeys(cat){
+  const all=orAll();
+  return Object.keys(all).filter(k=>cat==="all"||orCatsOf(all[k]).includes(cat)).sort((a,b)=>all[a].title.localeCompare(all[b].title));
+}
+function orIngToText(groups){
+  return groups.map(g=>(g.heading?g.heading+":\n":"")+g.rows.map(r=>r.text).join("\n")).join("\n");
+}
+function orTextToIng(txt){
+  const groups=[]; let cur={heading:"",rows:[]};
+  txt.split("\n").map(l=>l.trim()).filter(Boolean).forEach(l=>{
+    if(/:$/.test(l)){ if(cur.rows.length||cur.heading) groups.push(cur); cur={heading:l.slice(0,-1),rows:[]}; }
+    else cur.rows.push({text:l});
+  });
+  if(cur.rows.length||cur.heading) groups.push(cur);
+  return groups.filter(g=>g.rows.length);
+}
+function renderOther(){
+  const sub=document.getElementById("orSub"), body=document.getElementById("orBody");
+  if(!sub||!body) return;
+  if(orCat!=="all" && !orAllCats().some(c=>c.id===orCat)) orCat="all";
+  const tabs=[{id:"all",name:"All Recipes"}].concat(orAllCats());
+  sub.innerHTML = tabs.map(c=>`<button class="${c.id===orCat?'active':''}" onclick="orSetCat('${c.id}')">${escHTML(c.name)}</button>`).join("")
+    + (orCat!=="all" && otherCats.some(c=>c.id===orCat) ? `<button class="or-x" title="Delete this tab" onclick="orDeleteCat('${orCat}')">🗑️</button>` : "")
+    + `<button class="or-add" onclick="orAddCat()">＋ Add tab</button>`;
+  if(orView && orView.draft){ body.innerHTML=orFormHTML(); return; }
+  if(orView && orView.k){ body.innerHTML=orDetailHTML(orView.k); return; }
+  const all=orAll(), keys=orKeys(orCat);
+  body.innerHTML = `<button class="btn-edit" style="margin-bottom:14px" onclick="orNew()">➕ Add a recipe</button>`
+    + (keys.length ? `<div class="recipe-index">`+keys.map(k=>{
+        const r=all[k];
+        return `<button class="ri-card" onclick="orOpen('${k}')"><span class="ri-title">${escHTML(r.title)}</span><span class="ri-meta">${escHTML(orCatNames(r))}${r.serves?" · Serves "+escHTML(r.serves):""}</span></button>`;
+      }).join("")+`</div>` : `<p class="lead">Nothing here yet — tap <strong>Add a recipe</strong>.</p>`);
+}
+function orSetCat(id){ orCat=id; orView=null; renderOther(); }
+function orOpen(k){ orView={k}; renderOther(); window.scrollTo({top:0,behavior:"smooth"}); }
+function orBack(){ orView=null; renderOther(); }
+function orDetailHTML(k){
+  const r=orAll()[k]; if(!r) return "";
+  const link = r.url ? `<a href="${escHTML(r.url)}" target="_blank" rel="noopener">${escHTML(r.src||r.url)} ↗</a>` : (r.src?escHTML(r.src):"your own recipe");
+  const note = r.note ? `<div class="note-box">💡 ${escHTML(r.note)}</div>` : "";
+  return `<button class="btn-reset" style="margin-bottom:12px" onclick="orBack()">← Back</button>
+    <article class="recipe"><h3>${escHTML(r.title)}</h3>
+    <div class="meta">${escHTML(orCatNames(r))}${r.serves?" · Serves "+escHTML(r.serves):""} · Source: ${link}</div>
+    <button class="btn-edit" style="margin:8px 0" onclick="orEdit('${k}')">✏️ Edit</button>
+    <div class="cols"><div><h4>Ingredients</h4>${ingHTML(r.ing)}</div>
+    <div><h4>Instructions</h4><ol class="steps">${r.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div></div></article>`;
+}
+function orNew(){
+  orView={draft:{key:null, cats:orCat==="all"?[]:[orCat], title:"", serves:"", url:"", ing:"", steps:""}};
+  renderOther();
+}
+function orEdit(k){
+  const r=orAll()[k];
+  orView={draft:{key:k, cats:orCatsOf(r).slice(), title:r.title, serves:r.serves||"", url:r.url||"", ing:orIngToText(r.ing), steps:r.steps.join("\n")}};
+  renderOther();
+}
+function orFormHTML(){
+  const d=orView.draft;
+  return `<button class="btn-reset" style="margin-bottom:12px" onclick="orCancel()">← Cancel</button>
+    <article class="recipe">
+      <input type="text" class="or-field" id="orfTitle" placeholder="Recipe title" value="${escHTML(d.title)}" style="font-size:1.1rem;font-weight:700">
+      <div class="or-tags" id="orfCats"><span class="edit-hint" style="margin:0 6px 0 0">Show in:</span>${orAllCats().map(c=>`<label><input type="checkbox" value="${c.id}" ${d.cats.includes(c.id)?"checked":""}> ${escHTML(c.name)}</label>`).join("")}</div>
+      <input type="text" class="or-field" id="orfServes" placeholder="Serves (e.g. 8 or 1 loaf)" value="${escHTML(d.serves)}" style="max-width:240px">
+      <input type="url" class="or-field" id="orfUrl" placeholder="Source link (optional)" value="${escHTML(d.url)}">
+      <div class="cols">
+        <div><h4>Ingredients</h4><textarea class="recipe-edit-box" id="orfIng" rows="10">${escHTML(d.ing)}</textarea>
+          <div class="edit-hint">One per line. End a line with a colon (e.g. <em>Dough:</em>) to start a group.</div></div>
+        <div><h4>Instructions</h4><textarea class="recipe-edit-box" id="orfSteps" rows="10">${escHTML(d.steps)}</textarea>
+          <div class="edit-hint">One step per line.</div></div>
+      </div>
+      <div class="recipe-edit-actions">
+        <button class="btn-edit" onclick="orSave()">💾 Save</button>
+        <button class="btn-reset" onclick="orCancel()">Cancel</button>
+        ${(d.key && !OR_BUILTIN[d.key]) ? `<button class="btn-reset" onclick="orDelete('${d.key}')">🗑️ Delete recipe</button>` : ""}
+      </div></article>`;
+}
+function orCancel(){ const k=orView.draft.key; orView = k ? {k} : null; renderOther(); }
+function orSave(){
+  const d=orView.draft, g=id=>document.getElementById(id).value;
+  const title=g("orfTitle").trim(), ing=orTextToIng(g("orfIng"));
+  const steps=g("orfSteps").split("\n").map(s=>s.trim()).filter(Boolean);
+  const cats=[...document.querySelectorAll('#orfCats input:checked')].map(i=>i.value);
+  if(!title){ toast("Title required"); return; }
+  if(!cats.length){ toast("Pick at least one tab"); return; }
+  if(!ing.length){ toast("Add at least one ingredient"); return; }
+  let key=d.key;
+  if(!key){
+    const base="other-"+(slug(title)||"recipe"); key=base; let n=2;
+    while(orAll()[key]){ key=base+"-"+n; n++; }
+  }
+  const prev=orAll()[key]||{};
+  const url=g("orfUrl").trim();
+  otherRecipes[key]={cats, title, serves:g("orfServes").trim(), ing, steps,
+    url, src:url?(prev.url===url&&prev.src?prev.src:url.replace(/^https?:\/\/(www\.)?/,"").split("/")[0]):"", note:prev.note||""};
+  saveOther();
+  orView={k:key}; renderOther(); toast("Recipe saved");
+}
+function orDelete(k){
+  if(OR_BUILTIN[k]||!otherRecipes[k]) return;
+  if(!confirm("Delete this recipe? This can't be undone.")) return;
+  delete otherRecipes[k]; saveOther(); orView=null; renderOther(); toast("Recipe deleted");
+}
+function orAddCat(){
+  const name=(prompt("Name for the new tab (e.g. Breakfast, Drinks, Sides):")||"").trim();
+  if(!name) return;
+  if(orAllCats().some(c=>c.name.toLowerCase()===name.toLowerCase())){ toast("Tab already exists"); return; }
+  let id="cat-"+(slug(name)||"tab"), n=2; const base=id;
+  while(orAllCats().some(c=>c.id===id)){ id=base+"-"+n; n++; }
+  otherCats.push({id,name}); saveOther();
+  orCat=id; orView=null; renderOther(); toast("Tab added");
+}
+function orDeleteCat(id){
+  if(orKeys(id).length){ alert("Move or delete the recipes in this tab first."); return; }
+  if(!confirm("Delete this tab?")) return;
+  otherCats=otherCats.filter(c=>c.id!==id); saveOther(); orCat="all"; renderOther(); toast("Tab deleted");
+}
+
 /* ============================ MISC ============================ */
 let toastT;
 function toast(msg){ const p=document.getElementById("savedPop"); p.textContent="✓ "+msg; p.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>p.classList.remove("show"),1100); }
@@ -1936,6 +2110,8 @@ function applyRemote(data){
     if(s.unit)    unitSel=s.unit;
     customItems = s.customItems||[];
     customRecipes = s.customRecipes||{};
+    if(s.otherRecipes!==undefined) otherRecipes = s.otherRecipes;   // payloads that predate Other Recipes keep the local copy
+    if(s.otherCats!==undefined) otherCats = s.otherCats;
     buildCatalog();     // fold any synced custom items into CATALOG before seeding their prices below
     ensureDefaults();   // fill in any items the remote payload predates (e.g. newly added)
     remoteChecksAll = s.checks||{};
@@ -1951,13 +2127,13 @@ function applyRemote(data){
     mealScale.A = normalizeScale(remoteScaleAll[CTX.A.key]);
     mealScale.B = normalizeScale(remoteScaleAll[CTX.B.key]);
     save(LS.staples,staplePrices); save(LS.prices,prices); save(LS.store,storeSel); save(LS.unit,unitSel);
-    saveCustomItems(); saveCustomRecipes();
+    saveCustomItems(); saveCustomRecipes(); saveOther();
     save(ckChecks(CTX.A.key),checks.A); save(ckChecks(CTX.B.key),checks.B);
     save(ckCustom(CTX.A.key),custom.A); save(ckCustom(CTX.B.key),custom.B);
     save(ckMeals(CTX.A.key),mealPlan.A); save(ckMeals(CTX.B.key),mealPlan.B);
     save(ckScale(CTX.A.key),mealScale.A); save(ckScale(CTX.B.key),mealScale.B);
     saveRecipeEdits();
-    renderStapleRows(); renderCatalog(); renderAllRecipes(); renderOverview(); renderRecipes(); renderGrocery("A"); renderGrocery("B");
+    renderStapleRows(); renderCatalog(); renderAllRecipes(); renderOther(); renderOverview(); renderRecipes(); renderGrocery("A"); renderGrocery("B");
     setSyncStatus("🟢 synced");
   } finally { applyingRemote=false; }
 }
@@ -1969,7 +2145,7 @@ function syncPush(){
   remoteMealsAll[CTX.A.key]=mealPlan.A; remoteMealsAll[CTX.B.key]=mealPlan.B;
   remoteScaleAll[CTX.A.key]=mealScale.A; remoteScaleAll[CTX.B.key]=mealScale.B;
   myRev = DEVICE+"-"+(++seq);
-  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, mealScale:remoteScaleAll, recipeEdits:recipeEdits, customItems:customItems, customRecipes:customRecipes});
+  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, mealScale:remoteScaleAll, recipeEdits:recipeEdits, customItems:customItems, customRecipes:customRecipes, otherRecipes:otherRecipes, otherCats:otherCats});
   syncRef.set({rev:myRev, updatedAt:Date.now(), state:state}).catch(function(e){ console.warn('sync push failed',e); });
 }
 
@@ -1984,6 +2160,7 @@ renderRecipes();
 renderStapleRows();
 renderCatalog();
 renderAllRecipes();
+renderOther();
 renderGrocery("A");
 renderGrocery("B");
 syncInit();
