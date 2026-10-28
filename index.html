@@ -2165,6 +2165,25 @@ renderGrocery("A");
 renderGrocery("B");
 syncInit();
 
+/* ============================ SELF-UPDATE ============================ */
+// GitHub Pages serves this page with a 10-minute browser cache that we can't change, so a
+// freshly deployed version can sit unseen. On each open, fetch a fresh copy (cache:'reload'
+// also refreshes the browser's cached copy), and if it differs from what this device saw
+// last time, reload once. The sessionStorage flag stops a reload loop if the page stays stale.
+(function(){
+  if(!/^https?:/.test(location.protocol)) return;
+  function hash(t){ let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))|0; return String(h); }
+  fetch(location.pathname,{cache:'reload'}).then(r=>r.ok?r.text():null).then(t=>{
+    if(!t) return;
+    const h=hash(t); let prev=null;
+    try{ prev=localStorage.getItem('mp_pagehash'); localStorage.setItem('mp_pagehash',h); }catch(e){ return; }
+    if(prev && prev!==h){
+      try{ if(sessionStorage.getItem('mp_reloaded')) return; sessionStorage.setItem('mp_reloaded','1'); }catch(e){ return; }
+      location.reload();
+    }
+  }).catch(function(){});
+})();
+
 /* ============================ ADD TO HOME SCREEN ============================ */
 (function(){
   var banner=document.getElementById('installBanner'), txt=document.getElementById('installText'),
