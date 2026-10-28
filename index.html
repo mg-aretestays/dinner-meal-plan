@@ -231,6 +231,8 @@
   .or-sub button.active{background:var(--accentA);color:#fff;border-color:var(--accentA)}
   .or-sub button.or-add{border-style:dashed;color:var(--accentA)}
   .or-sub .or-x{padding:7px 9px;color:var(--muted)}
+  .or-tags{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:10px;font-size:.88rem}
+  .or-tags label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
   .or-field{display:block;width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.92rem;font-family:inherit;color:var(--ink);margin-bottom:8px}
   @media print{nav.tabs,.btn-reset,.additem,.remove-x,.install-banner{display:none}section.panel{display:block!important}}
 </style>
@@ -1911,7 +1913,7 @@ function openRecipe(k,slot,i){
 // Ingredients are plain text lines; "Heading:" lines start a new group.
 const OR_DEFAULT_CATS = [{id:"appetizers",name:"Appetizers"},{id:"sourdough",name:"Sourdough"},{id:"dessert",name:"Dessert"},{id:"snacks",name:"Snacks"}];
 const OR_BUILTIN = {
-  "sourdough-easy-bread":{cat:"sourdough", title:"Easy Sourdough Bread", serves:"1 large loaf", src:"blessthismessplease.com", url:"https://www.blessthismessplease.com/easy-sourdough-bread-recipe/",
+  "sourdough-easy-bread":{cats:["sourdough"], title:"Easy Sourdough Bread", serves:"1 large loaf", src:"blessthismessplease.com", url:"https://www.blessthismessplease.com/easy-sourdough-bread-recipe/",
     ing:[{heading:"", rows:[
       {text:"50 g active sourdough starter (1/4 cup)"},
       {text:"350 g warm water (1 1/3 cups plus 2 Tbsp)"},
@@ -1941,10 +1943,13 @@ function saveOther(){ save('mp_otherRecipes_v1', otherRecipes); save('mp_otherCa
 let orCat = "all", orView = null;   // active sub-tab; null | {k} detail | {draft} form
 function orAllCats(){ return OR_DEFAULT_CATS.concat(otherCats); }
 function orCatName(id){ const c=orAllCats().find(c=>c.id===id); return c?c.name:"Other"; }
+// A recipe belongs to one or more tabs: r.cats (array). Older saves used r.cat (string).
+function orCatsOf(r){ return r.cats || (r.cat ? [r.cat] : []); }
+function orCatNames(r){ return orCatsOf(r).map(orCatName).join(", "); }
 function orAll(){ return Object.assign({}, OR_BUILTIN, otherRecipes); }
 function orKeys(cat){
   const all=orAll();
-  return Object.keys(all).filter(k=>cat==="all"||all[k].cat===cat).sort((a,b)=>all[a].title.localeCompare(all[b].title));
+  return Object.keys(all).filter(k=>cat==="all"||orCatsOf(all[k]).includes(cat)).sort((a,b)=>all[a].title.localeCompare(all[b].title));
 }
 function orIngToText(groups){
   return groups.map(g=>(g.heading?g.heading+":\n":"")+g.rows.map(r=>r.text).join("\n")).join("\n");
@@ -1972,7 +1977,7 @@ function renderOther(){
   body.innerHTML = `<button class="btn-edit" style="margin-bottom:14px" onclick="orNew()">➕ Add a recipe</button>`
     + (keys.length ? `<div class="recipe-index">`+keys.map(k=>{
         const r=all[k];
-        return `<button class="ri-card" onclick="orOpen('${k}')"><span class="ri-title">${escHTML(r.title)}</span><span class="ri-meta">${escHTML(orCatName(r.cat))}${r.serves?" · Serves "+escHTML(r.serves):""}</span></button>`;
+        return `<button class="ri-card" onclick="orOpen('${k}')"><span class="ri-title">${escHTML(r.title)}</span><span class="ri-meta">${escHTML(orCatNames(r))}${r.serves?" · Serves "+escHTML(r.serves):""}</span></button>`;
       }).join("")+`</div>` : `<p class="lead">Nothing here yet — tap <strong>Add a recipe</strong>.</p>`);
 }
 function orSetCat(id){ orCat=id; orView=null; renderOther(); }
@@ -1984,18 +1989,18 @@ function orDetailHTML(k){
   const note = r.note ? `<div class="note-box">💡 ${escHTML(r.note)}</div>` : "";
   return `<button class="btn-reset" style="margin-bottom:12px" onclick="orBack()">← Back</button>
     <article class="recipe"><h3>${escHTML(r.title)}</h3>
-    <div class="meta">${escHTML(orCatName(r.cat))}${r.serves?" · Serves "+escHTML(r.serves):""} · Source: ${link}</div>
+    <div class="meta">${escHTML(orCatNames(r))}${r.serves?" · Serves "+escHTML(r.serves):""} · Source: ${link}</div>
     <button class="btn-edit" style="margin:8px 0" onclick="orEdit('${k}')">✏️ Edit</button>
     <div class="cols"><div><h4>Ingredients</h4>${ingHTML(r.ing)}</div>
     <div><h4>Instructions</h4><ol class="steps">${r.steps.map(s=>`<li>${escHTML(s)}</li>`).join("")}</ol>${note}</div></div></article>`;
 }
 function orNew(){
-  orView={draft:{key:null, cat:orCat==="all"?OR_DEFAULT_CATS[0].id:orCat, title:"", serves:"", url:"", ing:"", steps:""}};
+  orView={draft:{key:null, cats:orCat==="all"?[]:[orCat], title:"", serves:"", url:"", ing:"", steps:""}};
   renderOther();
 }
 function orEdit(k){
   const r=orAll()[k];
-  orView={draft:{key:k, cat:r.cat, title:r.title, serves:r.serves||"", url:r.url||"", ing:orIngToText(r.ing), steps:r.steps.join("\n")}};
+  orView={draft:{key:k, cats:orCatsOf(r).slice(), title:r.title, serves:r.serves||"", url:r.url||"", ing:orIngToText(r.ing), steps:r.steps.join("\n")}};
   renderOther();
 }
 function orFormHTML(){
@@ -2003,7 +2008,7 @@ function orFormHTML(){
   return `<button class="btn-reset" style="margin-bottom:12px" onclick="orCancel()">← Cancel</button>
     <article class="recipe">
       <input type="text" class="or-field" id="orfTitle" placeholder="Recipe title" value="${escHTML(d.title)}" style="font-size:1.1rem;font-weight:700">
-      <select class="or-field" id="orfCat" style="max-width:240px">${orAllCats().map(c=>`<option value="${c.id}" ${c.id===d.cat?"selected":""}>${escHTML(c.name)}</option>`).join("")}</select>
+      <div class="or-tags" id="orfCats"><span class="edit-hint" style="margin:0 6px 0 0">Show in:</span>${orAllCats().map(c=>`<label><input type="checkbox" value="${c.id}" ${d.cats.includes(c.id)?"checked":""}> ${escHTML(c.name)}</label>`).join("")}</div>
       <input type="text" class="or-field" id="orfServes" placeholder="Serves (e.g. 8 or 1 loaf)" value="${escHTML(d.serves)}" style="max-width:240px">
       <input type="url" class="or-field" id="orfUrl" placeholder="Source link (optional)" value="${escHTML(d.url)}">
       <div class="cols">
@@ -2023,7 +2028,9 @@ function orSave(){
   const d=orView.draft, g=id=>document.getElementById(id).value;
   const title=g("orfTitle").trim(), ing=orTextToIng(g("orfIng"));
   const steps=g("orfSteps").split("\n").map(s=>s.trim()).filter(Boolean);
+  const cats=[...document.querySelectorAll('#orfCats input:checked')].map(i=>i.value);
   if(!title){ toast("Title required"); return; }
+  if(!cats.length){ toast("Pick at least one tab"); return; }
   if(!ing.length){ toast("Add at least one ingredient"); return; }
   let key=d.key;
   if(!key){
@@ -2032,7 +2039,7 @@ function orSave(){
   }
   const prev=orAll()[key]||{};
   const url=g("orfUrl").trim();
-  otherRecipes[key]={cat:g("orfCat"), title, serves:g("orfServes").trim(), ing, steps,
+  otherRecipes[key]={cats, title, serves:g("orfServes").trim(), ing, steps,
     url, src:url?(prev.url===url&&prev.src?prev.src:url.replace(/^https?:\/\/(www\.)?/,"").split("/")[0]):"", note:prev.note||""};
   saveOther();
   orView={k:key}; renderOther(); toast("Recipe saved");
@@ -2103,8 +2110,8 @@ function applyRemote(data){
     if(s.unit)    unitSel=s.unit;
     customItems = s.customItems||[];
     customRecipes = s.customRecipes||{};
-    otherRecipes = s.otherRecipes||{};
-    otherCats = s.otherCats||[];
+    if(s.otherRecipes!==undefined) otherRecipes = s.otherRecipes;   // payloads that predate Other Recipes keep the local copy
+    if(s.otherCats!==undefined) otherCats = s.otherCats;
     buildCatalog();     // fold any synced custom items into CATALOG before seeding their prices below
     ensureDefaults();   // fill in any items the remote payload predates (e.g. newly added)
     remoteChecksAll = s.checks||{};
