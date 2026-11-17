@@ -1930,7 +1930,7 @@ const OR_BUILTIN = {
 };
 let otherRecipes = load('mp_otherRecipes_v1', {});   // { [key]: recipe } — user-created, or edited copies of built-ins
 // Retired built-in (replaced by sourdough-simple-bread): drop any saved/synced edited copy of it.
-function orPurgeRetired(){ if(otherRecipes && otherRecipes["sourdough-easy-bread"]){ delete otherRecipes["sourdough-easy-bread"]; try{ save('mp_otherRecipes_v1', otherRecipes); }catch(e){} } }
+function orPurgeRetired(){ if(otherRecipes && otherRecipes["sourdough-easy-bread"]){ delete otherRecipes["sourdough-easy-bread"]; try{ localStorage.setItem('mp_otherRecipes_v1', JSON.stringify(otherRecipes)); }catch(e){} } }
 orPurgeRetired();
 let otherCats = load('mp_otherCats_v1', []);         // [{id,name}] — user-added tabs
 function saveOther(){ save('mp_otherRecipes_v1', otherRecipes); save('mp_otherCats_v1', otherCats); }
