@@ -1913,29 +1913,25 @@ function openRecipe(k,slot,i){
 // Ingredients are plain text lines; "Heading:" lines start a new group.
 const OR_DEFAULT_CATS = [{id:"appetizers",name:"Appetizers"},{id:"sourdough",name:"Sourdough"},{id:"dessert",name:"Dessert"},{id:"snacks",name:"Snacks"}];
 const OR_BUILTIN = {
-  "sourdough-easy-bread":{cats:["sourdough"], title:"Easy Sourdough Bread", serves:"1 large loaf", src:"blessthismessplease.com", url:"https://www.blessthismessplease.com/easy-sourdough-bread-recipe/",
+  "sourdough-simple-bread":{cats:["sourdough"], title:"Homemade Sourdough Bread, Step by Step", serves:"1 loaf", src:"alexandracooks.com", url:"https://alexandracooks.com/2017/10/24/artisan-sourdough-made-simple-sourdough-bread-demystified-a-beginners-guide-to-sourdough-baking/",
     ing:[{heading:"", rows:[
-      {text:"50 g active sourdough starter (1/4 cup)"},
-      {text:"350 g warm water (1 1/3 cups plus 2 Tbsp)"},
-      {text:"500 g all-purpose or bread flour (4 cups plus 2 Tbsp)"},
-      {text:"10 g salt (1 1/2 tsp)"}]}],
+      {text:"50–100 g active, bubbly sourdough starter (she uses 100 g)"},
+      {text:"375 g warm water (she has used up to 380 g)"},
+      {text:"500 g bread flour (she uses 400 g high-protein bread flour plus 100 g Type 85 malted flour)"},
+      {text:"9–13 g fine sea salt (she uses 12 g; Diamond Crystal kosher also works)"}]}],
     steps:[
-      "Feed your starter the morning before or a few hours ahead, and use it at its peak, before it starts to fall.",
-      "Put the starter in a medium bowl and stir in the warm water with a fork until well combined.",
-      "Add the flour and salt and mix until no dry bits remain. It won't look like finished bread yet.",
-      "Cover with a damp towel and rest 1 hour at room temperature.",
-      "Pull the dough edges down into the center while turning the bowl, about 1 minute, until it forms a rough ball.",
-      "Cover with a damp towel and let it rise 8–10 hours at room temperature (the bulk rise), often overnight.",
-      "Turn the dough onto a lightly floured surface, tuck the edges into the middle, flip it over, and rest 5–10 minutes.",
-      "Pull the dough toward you against the counter to tighten it into a firm ball.",
-      "Dust a proofing basket well with flour, or use an 8-inch bowl that's greased and floured or lined with a floured towel.",
-      "Place the dough smooth side down in the basket, cover with a damp towel, and rest 1–2 hours until slightly spread and puffy.",
-      "Preheat the oven to 450°F.",
-      "Turn the dough onto parchment paper and score the top with a lame or a sharp or serrated knife.",
-      "Use the parchment to lower the dough into a Dutch oven and cover with the lid.",
-      "Bake covered 30 minutes, then uncover and bake 20–30 minutes more, until very dark and hollow-sounding when tapped.",
-      "Cool on a wire rack at least 1 hour before slicing."],
-    note:"If the bottom crust browns too much, drop the oven temperature by 25°F. To refresh your starter after mixing, keep 25 g of leftover starter and feed it 50 g water and 50 g flour. Best the day it's baked; leftovers make great toast."},
+      "Whisk the starter and water in a large bowl. Add the flour and salt and mix until a rough dough forms. Cover and rest 30 minutes.",
+      "Stretch and fold: lift a corner of the dough, pull it into the center, and repeat around the dough for 4–5 folds. Rest 30 minutes between sets and do four sets over 2 hours. Even one set helps.",
+      "Bulk fermentation: cover the bowl airtight and let the dough rise at room temperature, about 8–10 hours at 70°F or 4–6 hours at 78°F or warmer. It's ready when it has risen 50–75%, has bubbles on the surface, and jiggles when you move the bowl.",
+      "Turn the dough onto a lightly floured surface. Fold the edges into the center and turn it until it forms a round. A bench scraper helps build tension.",
+      "Rest the dough seam side up for 30 minutes. Meanwhile, line an 8-inch bowl or proofing basket with a floured towel.",
+      "Shape the dough again and place it seam side up in the basket.",
+      "Cover and refrigerate 12–18 hours, or up to 48 hours.",
+      "Place a Dutch oven in the oven and preheat to 450°F for at least 45 minutes. Cut a piece of parchment to fit the pot.",
+      "Invert the dough onto the parchment and score the top with a sharp blade (a simple X works). Lower the dough, parchment and all, into the hot pot.",
+      "Bake covered 30 minutes. Remove the lid, reduce the heat to 400°F, and bake 10–15 minutes more.",
+      "Cool on a wire rack for 1 hour before slicing."],
+    note:"Dense or gummy loaf? Try 30–60 minutes of room-temperature proofing before the fridge. If the bottom gets too crisp, move the loaf to a cold sheet pan after 30 minutes; if it isn't crisp enough, bake it directly on the rack for the last 5–10 minutes. Store airtight at room temperature up to 3 days, or freeze.\nUpdated video guide: https://youtu.be/S5s0I-TlxtA\nOpen crumb tip: https://youtu.be/ZUz_X0xiRr0"},
   "sourdough-pizza-wreath":{cats:["appetizers","sourdough"], title:"Sourdough Pizza Wreath", serves:"12", src:"countryroadssourdough.com", url:"https://countryroadssourdough.com/sourdough-pizza-wreath/",
     ing:[
       {heading:"Levain", rows:[
@@ -2023,10 +2019,13 @@ function renderOther(){
 function orSetCat(id){ orCat=id; orView=null; renderOther(); }
 function orOpen(k){ orView={k}; renderOther(); window.scrollTo({top:0,behavior:"smooth"}); }
 function orBack(){ orView=null; renderOther(); }
+function orNoteHTML(t){
+  return escHTML(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,"<br>");
+}
 function orDetailHTML(k){
   const r=orAll()[k]; if(!r) return "";
   const link = r.url ? `<a href="${escHTML(r.url)}" target="_blank" rel="noopener">${escHTML(r.src||r.url)} ↗</a>` : (r.src?escHTML(r.src):"your own recipe");
-  const note = r.note ? `<div class="note-box">💡 ${escHTML(r.note)}</div>` : "";
+  const note = r.note ? `<div class="note-box">💡 ${orNoteHTML(r.note)}</div>` : "";
   return `<button class="btn-reset" style="margin-bottom:12px" onclick="orBack()">← Back</button>
     <article class="recipe"><h3>${escHTML(r.title)}</h3>
     <div class="meta">${escHTML(orCatNames(r))}${r.serves?" · Serves "+escHTML(r.serves):""} · Source: ${link}</div>
