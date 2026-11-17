@@ -1118,6 +1118,7 @@ function normalizeMenu(arr){
 // ReferenceError that aborts the entire script (same class of bug as the
 // purgeStaleRecipeEdits/saveRecipeEdits TDZ crash fixed in commit 1b29506).
 let customRecipes = load('mp_customRecipes_v1', {});   // { [key]: {title, serves, ing, steps} } — user-created recipes
+let recipeEdits = load('mp_recipeEdits_v1', {});   // { [recipeKey]: {title, serves, cats, ing, steps} } — user overrides, layered on top of R
 let mealPlan = {
   A: normalizeMenu(load(ckMeals(CTX.A.key), null) || defaultMenu(CTX.A.key)),
   B: normalizeMenu(load(ckMeals(CTX.B.key), null) || defaultMenu(CTX.B.key))
@@ -1332,7 +1333,8 @@ window.addEventListener("scroll",function(e){
 },true);
 
 /* ============================ RECIPES ============================ */
-let recipeEdits = load('mp_recipeEdits_v1', {});   // { [recipeKey]: {ing, steps} } — user overrides, layered on top of R
+// recipeEdits itself is declared earlier (before mealPlan) — baseRecipe() now reads it, and
+// mealPlan's initializer calls normalizeMenu -> baseRecipe. See the customRecipes comment there.
 // One-time migration: any recipeEdits saved under the old free-text ing shape
 // (array of [heading, ...strings]) are superseded now that the corresponding
 // built-in recipe was rewritten directly with the new structured shape above.
@@ -1354,7 +1356,13 @@ function saveRecipeEdits(){ save('mp_recipeEdits_v1', recipeEdits); }
 // declarations, hoisted) stay here with the rest of the RECIPES section since only the
 // variable's own initialization needs to happen early, not these functions' definitions.
 function saveCustomRecipes(){ save('mp_customRecipes_v1', customRecipes); }
-function baseRecipe(k){ return R[k] || customRecipes[k]; }
+function baseRecipe(k){
+  const b = R[k];
+  if(!b) return customRecipes[k];
+  const e = recipeEdits[k];
+  if(!e || (!e.title && !e.serves)) return b;
+  return Object.assign({}, b, e.title ? {title:e.title} : {}, e.serves ? {serves:e.serves} : {});
+}
 function allRecipeKeys(){
   return Object.keys(R).concat(Object.keys(customRecipes)).sort((a,b)=>baseRecipe(a).title.localeCompare(baseRecipe(b).title));
 }
@@ -1615,7 +1623,7 @@ function saveRecipeForm(){
       customRecipes[k] = {title:d.title.trim(), serves:d.serves.trim()||"4", cats, ing:cleanIng, steps:d.steps};
       saveCustomRecipes();
     } else {
-      recipeEdits[k] = {cats, ing:cleanIng, steps:d.steps};
+      recipeEdits[k] = {title:d.title.trim(), serves:d.serves.trim()||R[k].serves, cats, ing:cleanIng, steps:d.steps};
       saveRecipeEdits();
     }
     recipeDraft=null; newItemDraft=null; recipeEditKey=null;
