@@ -233,6 +233,10 @@
   .or-sub .or-x{padding:7px 9px;color:var(--muted)}
   .or-tags{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:10px;font-size:.88rem}
   .or-tags label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+  .bulk-tag-list{margin-bottom:14px}
+  .bulk-tag-row{padding:12px 0;border-bottom:1px solid var(--line)}
+  .bulk-tag-row:last-child{border-bottom:none}
+  .bulk-tag-title{font-weight:700;margin-bottom:6px}
   .or-field{display:block;width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.92rem;font-family:inherit;color:var(--ink);margin-bottom:8px}
   @media print{nav.tabs,.btn-reset,.additem,.remove-x,.install-banner{display:none}section.panel{display:block!important}}
 </style>
@@ -1842,8 +1846,14 @@ function resetPrices(){
   initPrices();
   renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B"); toast("Reset to defaults");
 }
+let recBulkDraft = null;   // {[key]: [catId,...]} while the bulk tag editor is open; null otherwise
 function renderAllRecipes(){
   const sub=document.getElementById("recSub");
+  if(recBulkDraft){
+    if(sub) sub.innerHTML="";
+    document.getElementById("recipeIndex").innerHTML = recBulkHTML();
+    return;
+  }
   if(recCat!=="all" && !recAllCats().some(c=>c.id===recCat)) recCat="all";
   if(sub){
     const tabs=[{id:"all",name:"All Recipes"}].concat(recAllCats());
@@ -1854,10 +1864,50 @@ function renderAllRecipes(){
   const keys=recKeys(recCat);
   document.getElementById("recipeIndex").innerHTML =
     `<button class="btn-edit" style="margin-bottom:14px" onclick="addRecipeClicked()">➕ Add a recipe</button>
+    <button class="btn-reset" style="margin:0 0 14px 8px" onclick="recBulkOpen()">📋 Bulk edit tags</button>
     ${keys.length ? `<div class="recipe-index">`+keys.map(k=>{
       const r=baseRecipe(k), catNames=recCatNamesOf(k);
       return `<button class="ri-card" onclick="showRecipeDetail('${k}')"><span class="ri-title">${escHTML(r.title)}</span><span class="ri-meta">${catNames?escHTML(catNames)+" · ":""}Serves ${escHTML(r.serves)}${r.src?" · "+escHTML(r.src):""}</span></button>`;
     }).join("")+`</div>` : `<p class="lead">Nothing here yet.</p>`}`;
+}
+function recBulkOpen(){
+  recBulkDraft = {};
+  allRecipeKeys().forEach(k=>{ recBulkDraft[k] = recCatsOf(k).slice(); });
+  renderAllRecipes();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function recBulkHTML(){
+  const cats = recAllCats();
+  return `<button class="btn-reset" style="margin-bottom:12px" onclick="recBulkCancel()">← Cancel</button>
+    <p class="lead">Check or uncheck tags for every recipe, then save them all at once.</p>
+    <div class="bulk-tag-list">` + allRecipeKeys().map(k=>{
+      const r=baseRecipe(k);
+      return `<div class="bulk-tag-row">
+        <div class="bulk-tag-title">${escHTML(r.title)}</div>
+        <div class="or-tags">${cats.map(c=>`<label><input type="checkbox" ${recBulkDraft[k].includes(c.id)?"checked":""} onchange="recBulkToggle('${k}','${c.id}',this.checked)"> ${escHTML(c.name)}</label>`).join("")}</div>
+      </div>`;
+    }).join("") + `</div>
+    <div class="recipe-edit-actions">
+      <button class="btn-edit" onclick="recBulkSave()">💾 Save all</button>
+      <button class="btn-reset" onclick="recBulkCancel()">Cancel</button>
+    </div>`;
+}
+function recBulkToggle(k,catId,checked){
+  const arr = recBulkDraft[k], i = arr.indexOf(catId);
+  if(checked && i<0) arr.push(catId);
+  if(!checked && i>=0) arr.splice(i,1);
+}
+function recBulkCancel(){ recBulkDraft=null; renderAllRecipes(); }
+function recBulkSave(){
+  Object.keys(recBulkDraft).forEach(k=>{
+    const cats = recBulkDraft[k];
+    if(customRecipes[k]) customRecipes[k].cats = cats;
+    else recipeEdits[k] = Object.assign({}, recipeEdits[k], {cats});
+  });
+  saveCustomRecipes(); saveRecipeEdits();
+  recBulkDraft=null;
+  renderAllRecipes(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
+  toast("Tags saved");
 }
 function recSetCat(id){ recCat=id; renderAllRecipes(); }
 function recAddCat(){
