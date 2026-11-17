@@ -233,6 +233,10 @@
   .or-sub .or-x{padding:7px 9px;color:var(--muted)}
   .or-tags{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:10px;font-size:.88rem}
   .or-tags label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+  .bulk-tag-list{margin-bottom:14px}
+  .bulk-tag-row{padding:12px 0;border-bottom:1px solid var(--line)}
+  .bulk-tag-row:last-child{border-bottom:none}
+  .bulk-tag-title{font-weight:700;margin-bottom:6px}
   .or-field{display:block;width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.92rem;font-family:inherit;color:var(--ink);margin-bottom:8px}
   @media print{nav.tabs,.btn-reset,.additem,.remove-x,.install-banner{display:none}section.panel{display:block!important}}
 </style>
@@ -365,6 +369,7 @@
   <section class="panel" id="recipes">
     <h2 class="section-title">All Recipes</h2>
     <p class="lead">Every recipe in the rotation. Tap a title to open its full ingredients and instructions.</p>
+    <div id="recSub" class="or-sub"></div>
     <div id="recipeIndex"></div>
     <div id="recipeDetail" style="display:none"></div>
   </section>
@@ -424,7 +429,7 @@ let unitSel = {};      // key/name -> selected unit label
 
 /* ============================ RECIPES ============================ */
 const R = {
-  bpc:{title:"Black Pepper Chicken", serves:"4", src:"omnivorescookbook.com", url:"https://omnivorescookbook.com/black-pepper-chicken/",
+  bpc:{title:"Black Pepper Chicken", serves:"4", src:"omnivorescookbook.com", url:"https://omnivorescookbook.com/black-pepper-chicken/", cats:["chicken"],
     ing:[
       {heading:"Chicken", rows:[
         {text:"1 lb chicken breasts (or thighs), sliced against the grain into 1/4\" thick pieces", item:"Chicken breast", qty:1}
@@ -458,7 +463,7 @@ const R = {
       "Add the remaining 1 Tbsp oil. Add ginger and garlic; stir until fragrant. Add onion and peppers and stir-cook 20 seconds.",
       "Stir the sauce until the cornstarch is fully dissolved, pour into the skillet, and stir immediately until it thickens enough to coat a spoon. Add the chicken back and toss to coat. Turn off heat and transfer everything to a plate so it stops cooking.",
       "Serve hot over rice."]},
-  tacos:{title:"Slow-Cooker Shredded Chicken Tacos", serves:"6", src:"slowcookermeals.com", url:"https://slowcookermeals.com/slow-cooker-shredded-chicken-tacos/",
+  tacos:{title:"Slow-Cooker Shredded Chicken Tacos", serves:"6", src:"slowcookermeals.com", url:"https://slowcookermeals.com/slow-cooker-shredded-chicken-tacos/", cats:["chicken","tacos"],
     ing:[
       {heading:"", rows:[
         {text:"2 lbs boneless, skinless chicken breasts (about 4 medium)", item:"Chicken breast", qty:2},
@@ -479,7 +484,7 @@ const R = {
     steps:["Place chicken breasts in the slow cooker. Cover with salsa and sprinkle taco seasoning, black pepper, and green chilies over the top.",
       "Cover and cook on low 7–8 hours or high 2½–3 hours. When done, shred the chicken with two forks and stir into the sauce.",
       "Serve on tortillas with your favorite toppings."]},
-  stirfry:{title:"Chicken Stir Fry Noodles", serves:"~4", src:"eatwell101.com", url:"https://www.eatwell101.com/chicken-pasta-skillet-recipe",
+  stirfry:{title:"Chicken Stir Fry Noodles", serves:"~4", src:"eatwell101.com", url:"https://www.eatwell101.com/chicken-pasta-skillet-recipe", cats:["chicken","pasta"],
     ing:[
       {heading:"", rows:[
         {text:"1 lb skinless, boneless chicken breast, cut into strips", item:"Chicken breast", qty:1},
@@ -505,7 +510,7 @@ const R = {
       "While the pasta cooks, whisk together the brown sugar, soy sauce, hoisin, sesame oil, ginger, red pepper, and black pepper in a small bowl.",
       "Season chicken strips with salt and pepper. Add olive oil to a skillet and cook chicken in an even layer over medium heat, turning occasionally, 2–3 minutes until golden. Stir in garlic and carrots and cook a minute more until cooked through.",
       "Transfer the cooked spaghetti and broccoli to the skillet, pour the sauce on top, and toss until fully incorporated. Reheat a couple minutes and serve garnished with scallion and toasted sesame seeds."]},
-  snackwraps:{title:"Buffalo Ranch Snack Wraps", serves:"4", src:"Your recipe (inline)", url:"",
+  snackwraps:{title:"Buffalo Ranch Snack Wraps", serves:"4", src:"Your recipe (inline)", url:"", cats:["chicken","tacos"],
     ing:[
       {heading:"", rows:[
         {text:"Breaded chicken strips/patties (frozen)", item:"Breaded chicken strips (frozen)", qty:1},
@@ -518,7 +523,7 @@ const R = {
     ],
     steps:["Cook the breaded chicken per package directions.","Toss or drizzle the cooked chicken with buffalo sauce.",
       "Lay chicken on a tortilla with shredded lettuce, Mexican cheese, and a drizzle of ranch.","Fold up and serve."]},
-  crunchwraps:{title:"Beef Crunch Wraps", serves:"4–6", src:"Your recipe (inline)", url:"",
+  crunchwraps:{title:"Beef Crunch Wraps", serves:"4–6", src:"Your recipe (inline)", url:"", cats:["beef","tacos"],
     ing:[
       {heading:"", rows:[
         {text:"1 lb ground beef", item:"Ground beef", qty:1},
@@ -536,7 +541,7 @@ const R = {
       "Add lettuce, diced tomatoes, and Mexican cheese on top of the corn tortilla.",
       "Fold the edges of the large tortilla up over the center, pleating as you go.",
       "Crisp seam-side-down in a hot skillet until golden, then flip and crisp the other side."]},
-  alfredo:{title:"Chicken Alfredo", serves:"4", src:"Your recipe (inline)", url:"",
+  alfredo:{title:"Chicken Alfredo", serves:"4", src:"Your recipe (inline)", url:"", cats:["chicken","pasta"],
     ing:[
       {heading:"", rows:[
         {text:"1 lb chicken", item:"Chicken breast", qty:1},
@@ -546,7 +551,7 @@ const R = {
     ],
     steps:["Boil the noodles per package; drain.","Season and cook the chicken, then slice.",
       "Warm the Alfredo sauce, then toss with the noodles and chicken. Serve."]},
-  spaghetti:{title:"Spaghetti & Meatballs", serves:"4–6", src:"Your recipe (inline)", url:"",
+  spaghetti:{title:"Spaghetti & Meatballs", serves:"4–6", src:"Your recipe (inline)", url:"", cats:["beef","pasta"],
     ing:[
       {heading:"", rows:[
         {text:"1 lb noodles (spaghetti)", item:"Spaghetti", qty:1},
@@ -558,7 +563,7 @@ const R = {
     steps:["Boil the spaghetti per package; drain.",
       "Heat the pasta sauce with the meatballs and a shake of Italian seasoning until the meatballs are heated through.",
       "Serve the sauce and meatballs over the spaghetti."]},
-  garlicpasta:{title:"Roasted Garlic Spaghetti", serves:"4–6", src:"motherthyme.com", url:"https://www.motherthyme.com/2017/01/roasted-garlic-spaghetti.html",
+  garlicpasta:{title:"Roasted Garlic Spaghetti", serves:"4–6", src:"motherthyme.com", url:"https://www.motherthyme.com/2017/01/roasted-garlic-spaghetti.html", cats:["vegetarian","pasta"],
     ing:[
       {heading:"", rows:[
         {text:"2 whole garlic heads", item:"Garlic", qty:2},
@@ -582,7 +587,7 @@ const R = {
       "Melt the butter in the same pot or a large deep skillet over medium heat.",
       "Add the roasted garlic, then the cooked spaghetti and reserved pasta water; stir until coated and heated through.",
       "Off heat, stir in the cheese, herbs, and red pepper flakes if using. Season with salt and pepper and garnish with shaved Parmesan."]},
-  pork:{title:"Honey Garlic Pork Tenderloin", serves:"6", src:"downshiftology.com", url:"https://downshiftology.com/recipes/honey-garlic-pork-tenderloin/",
+  pork:{title:"Honey Garlic Pork Tenderloin", serves:"6", src:"downshiftology.com", url:"https://downshiftology.com/recipes/honey-garlic-pork-tenderloin/", cats:["pork"],
     ing:[
       {heading:"", rows:[
         {text:"2 (1 lb each) pork tenderloins", item:"Pork tenderloin", qty:2},
@@ -606,7 +611,7 @@ const R = {
       "Turn off the stove, add the sauce to the pan, and turn the pork to coat. Transfer to the oven and roast 15–20 minutes, until an instant-read thermometer reads 140°F.",
       "Return the skillet to the stove; remove the pork to a plate and cover with foil to rest 5–10 minutes. Simmer the remaining sauce 1–2 minutes until slightly reduced and thickened.",
       "Slice the pork into 1/2-inch slices, arrange on a platter, drizzle with the sauce, and serve."]},
-  breakfast:{title:"Breakfast for Dinner", serves:"4", src:"Your recipe (inline)", url:"",
+  breakfast:{title:"Breakfast for Dinner", serves:"4", src:"Your recipe (inline)", url:"", cats:["pork","breakfast"],
     ing:[
       {heading:"", rows:[
         {text:"Pancakes (mix + as needed)", item:"Pancake mix", qty:1},
@@ -617,7 +622,7 @@ const R = {
       ]}
     ],
     steps:["Cook the bacon and sausage.","Scramble or fry the eggs.","Griddle the pancakes.","Serve everything together."]},
-  helper:{title:"One-Pot Cheeseburger Macaroni (Hamburger Helper)", serves:"6", src:"jawnsicooked.com", url:"https://jawnsicooked.com/dinner/one-pot-homemade-cheeseburger-macaroni-hamburger-helper/",
+  helper:{title:"One-Pot Cheeseburger Macaroni (Hamburger Helper)", serves:"6", src:"jawnsicooked.com", url:"https://jawnsicooked.com/dinner/one-pot-homemade-cheeseburger-macaroni-hamburger-helper/", cats:["beef","pasta"],
     ing:[
       {heading:"", rows:[
         {text:"2 Tbsp butter", item:"Butter", qty:0.06},
@@ -646,7 +651,7 @@ const R = {
       "Add the pasta, raise heat to high, and bring to a boil.",
       "Reduce heat to medium-low and simmer until the pasta is cooked through, stirring occasionally so it doesn't stick, 10–12 minutes.",
       "Remove from heat and stir in the cheese."]},
-  burgers:{title:"Burgers (with homemade seasoning)", serves:"4", src:"Your recipe + simplejoy.com seasoning", url:"https://www.simplejoy.com/hamburger-seasoning/",
+  burgers:{title:"Burgers (with homemade seasoning)", serves:"4", src:"Your recipe + simplejoy.com seasoning", url:"https://www.simplejoy.com/hamburger-seasoning/", cats:["beef"],
     ing:[
       {heading:"Burgers", rows:[
         {text:"1 lb ground beef (80/20)", item:"Ground beef", qty:1},
@@ -670,7 +675,7 @@ const R = {
       "Use 1 Tbsp of the seasoning total to rub into both sides of all four patties (or mix 1 Tbsp into the pound of beef).",
       "Grill or skillet the patties over medium heat about 3 1/2 minutes per side for medium; add American cheese near the end to melt.",
       "Serve on buns with your favorite toppings."]},
-  mac:{title:"Stovetop Mac & Cheese", serves:"6", src:"Your recipe (photo)", url:"",
+  mac:{title:"Stovetop Mac & Cheese", serves:"6", src:"Your recipe (photo)", url:"", cats:["vegetarian","pasta"],
     ing:[
       {heading:"", rows:[
         {text:"1 stick butter", item:"Butter", qty:0.25},
@@ -686,7 +691,7 @@ const R = {
       "Put in the flour; mix.","Pour in the milk; add salt, pepper, and paprika.",
       "Once it thickens, add the Monterey Jack and sharp cheddar; let melt.",
       "Strain the noodles and add to the cheese sauce.","Broil the mac & cheese for 3–5 minutes."]},
-  tacobowls:{title:"Ground Beef Taco Bowls", serves:"4", src:"spicedbites.com", url:"https://spicedbites.com/ground-beef-taco-bowls",
+  tacobowls:{title:"Ground Beef Taco Bowls", serves:"4", src:"spicedbites.com", url:"https://spicedbites.com/ground-beef-taco-bowls", cats:["beef","tacos"],
     ing:[
       {heading:"", rows:[
         {text:"1 lb ground beef (85/15 or 90/10)", item:"Ground beef", qty:1},
@@ -707,7 +712,7 @@ const R = {
       "Prepare the beef: heat oil in a skillet over medium-high and brown the beef until crumbled and fully cooked, stirring in the taco seasoning.",
       "Assemble: place rice in bowls and arrange the beef, beans, corn, tomatoes, and lettuce in sections.",
       "Add a dollop of sour cream to the center and sprinkle with fresh cilantro."]},
-  kfc:{title:"Homemade KFC Famous Bowl (Copycat)", serves:"4", src:"imhungryforthat.com", url:"https://imhungryforthat.com/kfc-famous-bowl-copycat-recipe/",
+  kfc:{title:"Homemade KFC Famous Bowl (Copycat)", serves:"4", src:"imhungryforthat.com", url:"https://imhungryforthat.com/kfc-famous-bowl-copycat-recipe/", cats:["chicken"],
     ing:[
       {heading:"", rows:[
         {text:"2 1/2 cups mashed potatoes", item:"Instant mashed potatoes", qty:1},
@@ -723,7 +728,7 @@ const R = {
       "Layer the casserole: mashed potatoes on the bottom, then corn, then chicken, topped with shredded cheese.",
       "Bake 10–15 minutes, until the cheese melts.",
       "Transfer to bowls and top with gravy."]},
-  pizza:{title:"Pepperoni Pizza (homemade dough)", serves:"4 (dough makes 2 crusts)", src:"foodnetwork.com + thekitchn.com", url:"https://www.thekitchn.com/pepperoni-pizza-22931782",
+  pizza:{title:"Pepperoni Pizza (homemade dough)", serves:"4 (dough makes 2 crusts)", src:"foodnetwork.com + thekitchn.com", url:"https://www.thekitchn.com/pepperoni-pizza-22931782", cats:["pork","pizza"],
     ing:[
       {heading:"Pizza Dough (Bobby Flay — makes 2 crusts)", rows:[
         {text:"3 1/2 – 4 cups bread flour, plus more for rolling", item:"Bread/all-purpose flour", qty:0.2},
@@ -749,7 +754,7 @@ const R = {
       "Coat a rimmed baking sheet with 2 Tbsp olive oil. Place the dough on it and press out toward the edges into an even crust (don't tear it).",
       "Spread 1/2 cup tomato sauce in a thin layer leaving a border (add more if desired). Sprinkle on the mozzarella and Parmesan, then lay the pepperoni in a single layer.",
       "Bake 15–20 minutes, until the edges are golden-brown and crispy and the cheese is melted. Rotate the pan halfway if your oven bakes unevenly. Cool 5 minutes, slice, and serve with red pepper flakes if desired."]},
-  zuppa:{title:"Instant Pot Pesto Zuppa Toscana", serves:"6", src:"halfbakedharvest.com", url:"https://www.halfbakedharvest.com/instant-pot-pesto-zuppa-toscana/",
+  zuppa:{title:"Instant Pot Pesto Zuppa Toscana", serves:"6", src:"halfbakedharvest.com", url:"https://www.halfbakedharvest.com/instant-pot-pesto-zuppa-toscana/", cats:["chicken","pork","soup","instantpot"],
     ing:[
       {heading:"", rows:[
         {text:"4 slices thick-cut bacon, chopped", item:"Bacon", qty:0.5},
@@ -774,7 +779,7 @@ const R = {
       "Add the broth, pesto, lemon juice, red pepper flakes, and season with salt and pepper. Cover and cook on high pressure 8 minutes.",
       "Use natural or quick release. Set to sauté and stir in the kale, cream, and Parmesan. Cook until the kale is wilted, about 10 minutes. Turn off and stir in the reserved bacon.",
       "Serve topped with additional Parmesan and fresh thyme, if desired."]},
-  porkloin:{title:"Best Damn Oven-Roasted Pork Loin", serves:"4–6", src:"recipeteacher.com", url:"https://recipeteacher.com/best-damn-oven-roasted-pork-loin/",
+  porkloin:{title:"Best Damn Oven-Roasted Pork Loin", serves:"4–6", src:"recipeteacher.com", url:"https://recipeteacher.com/best-damn-oven-roasted-pork-loin/", cats:["pork"],
     ing:[
       {heading:"", rows:[
         {text:"Pork loin roast, 2-3 lbs, boneless", item:"Pork loin roast (boneless)", qty:1},
@@ -794,7 +799,7 @@ const R = {
       "Place the seasoned pork roast fat-side-up on the foil-lined sheet pan and roast at 425°F for 15 minutes.",
       "After 15 minutes, reduce heat to 375°F and continue roasting about 45 minutes, or until the internal temperature at the center reaches 145°F.",
       "Remove from the oven and tent loosely with foil for 5–10 minutes before serving."]},
-  salmonbites:{title:"Honey Garlic Salmon Bites", serves:"4", src:"reciyo.com", url:"https://reciyo.com/honey-garlic-salmon-bites-easy-flavorful-dinner/",
+  salmonbites:{title:"Honey Garlic Salmon Bites", serves:"4", src:"reciyo.com", url:"https://reciyo.com/honey-garlic-salmon-bites-easy-flavorful-dinner/", cats:["seafood"],
     ing:[
       {heading:"", rows:[
         {text:"1.5 lbs fresh salmon fillets, skinless", item:"Salmon", qty:1.5},
@@ -821,7 +826,7 @@ const R = {
       "Reduce the heat to medium-low and pour the reserved sauce into the pan. Bring to a gentle simmer, whisk the cornstarch slurry again, then stir it into the sauce. Cook, stirring, until the glaze thickens and turns glossy, about 30-60 seconds.",
       "Return the salmon bites to the pan and gently toss to coat every piece in the glaze. Cook another minute to let the flavors meld.",
       "Transfer to a serving platter, sprinkle with toasted sesame seeds and sliced green onions, and serve immediately with steamed rice, roasted vegetables, or a green salad."]},
-  pulledpork:{title:"Instant Pot Pulled Pork", serves:"8", src:"noshtastic.com", url:"https://www.noshtastic.com/pressure-cooker-pulled-pork-carnitas/",
+  pulledpork:{title:"Instant Pot Pulled Pork", serves:"8", src:"noshtastic.com", url:"https://www.noshtastic.com/pressure-cooker-pulled-pork-carnitas/", cats:["pork","instantpot"],
     ing:[
       {heading:"", rows:[
         {text:"3 lb boneless pork shoulder, cut into two large pieces", item:"Pork shoulder (Boston butt)", qty:3},
@@ -846,7 +851,7 @@ const R = {
       "Lock the lid, set the vent to sealing, and cook on manual/high pressure for 65 minutes.",
       "Let the pressure release naturally for 15 minutes, then release any remaining pressure. If the pork doesn't shred easily, cook 10–15 minutes longer.",
       "Shred the pork and stir in BBQ sauce if desired."]},
-  costcopeppers:{title:"Costco Stuffed Bell Peppers", serves:"4", src:"Costco", url:"",
+  costcopeppers:{title:"Costco Stuffed Bell Peppers", serves:"4", src:"Costco", url:"", cats:["beef"],
     ing:[
       {heading:"", rows:[
         {text:"1 package Costco stuffed bell peppers", item:"Costco stuffed bell peppers", qty:1}
@@ -854,7 +859,7 @@ const R = {
     ],
     steps:["Heat the stuffed peppers following the cooking directions on the package.",
       "Let rest a few minutes, then serve."]},
-  costcolasagna:{title:"Costco Lasagna", serves:"6", src:"Costco", url:"",
+  costcolasagna:{title:"Costco Lasagna", serves:"6", src:"Costco", url:"", cats:["beef","pasta"],
     ing:[
       {heading:"", rows:[
         {text:"1 Costco lasagna", item:"Costco lasagna", qty:1}
@@ -862,7 +867,7 @@ const R = {
     ],
     steps:["Heat the lasagna following the cooking directions on the package.",
       "Let rest 10 minutes so it holds together when cut, then serve."]},
-  chickennoodle:{title:"Instant Pot Chicken Noodle Soup", serves:"8", src:"skinnyms.com", url:"https://skinnyms.com/instant-pot-chicken-noodle-soup/",
+  chickennoodle:{title:"Instant Pot Chicken Noodle Soup", serves:"8", src:"skinnyms.com", url:"https://skinnyms.com/instant-pot-chicken-noodle-soup/", cats:["chicken","soup","instantpot","pasta"],
     ing:[
       {heading:"", rows:[
         {text:"1 Tbsp olive oil", item:"Olive oil", qty:0.05},
@@ -1353,6 +1358,28 @@ function baseRecipe(k){ return R[k] || customRecipes[k]; }
 function allRecipeKeys(){
   return Object.keys(R).concat(Object.keys(customRecipes)).sort((a,b)=>baseRecipe(a).title.localeCompare(baseRecipe(b).title));
 }
+// Recipe sub-tabs: by meat and by dinner type. Built-ins carry a default `cats` array in R;
+// a custom recipe or an edited built-in can override it (stored on customRecipes[k].cats or
+// recipeEdits[k].cats respectively — same place its ingredient/step edits already live).
+const REC_DEFAULT_CATS = [
+  {id:"chicken",name:"Chicken"},{id:"beef",name:"Beef"},{id:"pork",name:"Pork"},
+  {id:"seafood",name:"Seafood"},{id:"vegetarian",name:"Vegetarian"},
+  {id:"pasta",name:"Pasta"},{id:"soup",name:"Soup"},{id:"instantpot",name:"Instant Pot"},
+  {id:"tacos",name:"Tacos & Wraps"},{id:"pizza",name:"Pizza"},{id:"breakfast",name:"Breakfast"}
+];
+let recCats = load('mp_recCats_v1', []);   // [{id,name}] — user-added tabs
+function saveRecCats(){ save('mp_recCats_v1', recCats); }
+function recAllCats(){ return REC_DEFAULT_CATS.concat(recCats); }
+function recCatName(id){ const c=recAllCats().find(c=>c.id===id); return c?c.name:"Other"; }
+function recCatsOf(k){
+  if(customRecipes[k]) return customRecipes[k].cats || [];
+  const edit=recipeEdits[k];
+  if(edit && edit.cats) return edit.cats;
+  return (R[k] && R[k].cats) || [];
+}
+function recCatNamesOf(k){ return recCatsOf(k).map(recCatName).join(", "); }
+function recKeys(cat){ return allRecipeKeys().filter(k=>cat==="all"||recCatsOf(k).includes(cat)); }
+let recCat = "all";   // active Recipes sub-tab
 function recipeData(k){
   if(customRecipes[k]) return customRecipes[k];
   const base=R[k], edit=recipeEdits[k];
@@ -1521,7 +1548,7 @@ function genRecipeKey(title){
 }
 
 function addRecipeClicked(){
-  recipeDraft = {key:null, isNew:true, title:"", serves:"", ing:[newIngGroup("")], steps:[]};
+  recipeDraft = {key:null, isNew:true, title:"", serves:"", cats:recCat==="all"?[]:[recCat], ing:[newIngGroup("")], steps:[]};
   newItemDraft=null; recipeEditKey=null; itemEdit=null;
   renderRecipeForm();
 }
@@ -1533,6 +1560,7 @@ function renderRecipeForm(){
     <article class="recipe">
       <input type="text" class="recipe-title-in" placeholder="Recipe title" value="${escHTML(d.title)}" onchange="draftSetTitle(this.value)">
       <input type="text" class="recipe-serves-in" placeholder="Serves (e.g. 4 or 4–6)" value="${escHTML(d.serves)}" onchange="draftSetServes(this.value)">
+      <div class="or-tags" id="recfCats"><span class="edit-hint" style="margin:0 6px 0 0">Show in:</span>${recAllCats().map(c=>`<label><input type="checkbox" value="${c.id}" ${d.cats.includes(c.id)?"checked":""}> ${escHTML(c.name)}</label>`).join("")}</div>
       <div class="cols">
         <div><h4>Ingredients</h4><div id="ingredientBuilder"></div></div>
         <div><h4>Instructions</h4>
@@ -1553,7 +1581,7 @@ function renderRecipeForm(){
 
 function editRecipe(k){
   const rd = recipeData(k), base = baseRecipe(k);
-  recipeDraft = {key:k, isNew:false, title:base.title, serves:base.serves, ing:cloneIng(rd.ing), steps:rd.steps.slice()};
+  recipeDraft = {key:k, isNew:false, title:base.title, serves:base.serves, cats:recCatsOf(k).slice(), ing:cloneIng(rd.ing), steps:rd.steps.slice()};
   recipeEditKey = k;
   newItemDraft = null; itemEdit = null;
   renderRecipeForm();
@@ -1572,9 +1600,10 @@ function saveRecipeForm(){
   if(!d.title.trim()){ toast("Title required"); return; }
   const cleanIng = d.ing.map(g=>({heading:g.heading, rows:g.rows.filter(r=>r.text.trim())})).filter(g=>g.rows.length);
   if(!cleanIng.length){ toast("Add at least one ingredient"); return; }
+  const cats=[...document.querySelectorAll('#recfCats input:checked')].map(i=>i.value);
   if(d.isNew){
     const key = genRecipeKey(d.title);
-    customRecipes[key] = {title:d.title.trim(), serves:d.serves.trim()||"4", ing:cleanIng, steps:d.steps};
+    customRecipes[key] = {title:d.title.trim(), serves:d.serves.trim()||"4", cats, ing:cleanIng, steps:d.steps};
     saveCustomRecipes();
     recipeDraft=null; newItemDraft=null; recipeEditKey=null;
     renderAllRecipes(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
@@ -1583,10 +1612,10 @@ function saveRecipeForm(){
   } else {
     const k = d.key;
     if(customRecipes[k]){
-      customRecipes[k] = {title:d.title.trim(), serves:d.serves.trim()||"4", ing:cleanIng, steps:d.steps};
+      customRecipes[k] = {title:d.title.trim(), serves:d.serves.trim()||"4", cats, ing:cleanIng, steps:d.steps};
       saveCustomRecipes();
     } else {
-      recipeEdits[k] = {ing:cleanIng, steps:d.steps};
+      recipeEdits[k] = {cats, ing:cleanIng, steps:d.steps};
       saveRecipeEdits();
     }
     recipeDraft=null; newItemDraft=null; recipeEditKey=null;
@@ -1817,13 +1846,83 @@ function resetPrices(){
   initPrices();
   renderStapleRows(); renderCatalog(); renderGrocery("A"); renderGrocery("B"); toast("Reset to defaults");
 }
+let recBulkDraft = null;   // {[key]: [catId,...]} while the bulk tag editor is open; null otherwise
 function renderAllRecipes(){
+  const sub=document.getElementById("recSub");
+  if(recBulkDraft){
+    if(sub) sub.innerHTML="";
+    document.getElementById("recipeIndex").innerHTML = recBulkHTML();
+    return;
+  }
+  if(recCat!=="all" && !recAllCats().some(c=>c.id===recCat)) recCat="all";
+  if(sub){
+    const tabs=[{id:"all",name:"All Recipes"}].concat(recAllCats());
+    sub.innerHTML = tabs.map(c=>`<button class="${c.id===recCat?'active':''}" onclick="recSetCat('${c.id}')">${escHTML(c.name)}</button>`).join("")
+      + (recCat!=="all" && recCats.some(c=>c.id===recCat) ? `<button class="or-x" title="Delete this tab" onclick="recDeleteCat('${recCat}')">🗑️</button>` : "")
+      + `<button class="or-add" onclick="recAddCat()">＋ Add tab</button>`;
+  }
+  const keys=recKeys(recCat);
   document.getElementById("recipeIndex").innerHTML =
     `<button class="btn-edit" style="margin-bottom:14px" onclick="addRecipeClicked()">➕ Add a recipe</button>
-    <div class="recipe-index">`+allRecipeKeys().map(k=>{
+    <button class="btn-reset" style="margin:0 0 14px 8px" onclick="recBulkOpen()">📋 Bulk edit tags</button>
+    ${keys.length ? `<div class="recipe-index">`+keys.map(k=>{
+      const r=baseRecipe(k), catNames=recCatNamesOf(k);
+      return `<button class="ri-card" onclick="showRecipeDetail('${k}')"><span class="ri-title">${escHTML(r.title)}</span><span class="ri-meta">${catNames?escHTML(catNames)+" · ":""}Serves ${escHTML(r.serves)}${r.src?" · "+escHTML(r.src):""}</span></button>`;
+    }).join("")+`</div>` : `<p class="lead">Nothing here yet.</p>`}`;
+}
+function recBulkOpen(){
+  recBulkDraft = {};
+  allRecipeKeys().forEach(k=>{ recBulkDraft[k] = recCatsOf(k).slice(); });
+  renderAllRecipes();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function recBulkHTML(){
+  const cats = recAllCats();
+  return `<button class="btn-reset" style="margin-bottom:12px" onclick="recBulkCancel()">← Cancel</button>
+    <p class="lead">Check or uncheck tags for every recipe, then save them all at once.</p>
+    <div class="bulk-tag-list">` + allRecipeKeys().map(k=>{
       const r=baseRecipe(k);
-      return `<button class="ri-card" onclick="showRecipeDetail('${k}')"><span class="ri-title">${escHTML(r.title)}</span><span class="ri-meta">Serves ${escHTML(r.serves)}${r.src?" · "+escHTML(r.src):""}</span></button>`;
-    }).join("")+`</div>`;
+      return `<div class="bulk-tag-row">
+        <div class="bulk-tag-title">${escHTML(r.title)}</div>
+        <div class="or-tags">${cats.map(c=>`<label><input type="checkbox" ${recBulkDraft[k].includes(c.id)?"checked":""} onchange="recBulkToggle('${k}','${c.id}',this.checked)"> ${escHTML(c.name)}</label>`).join("")}</div>
+      </div>`;
+    }).join("") + `</div>
+    <div class="recipe-edit-actions">
+      <button class="btn-edit" onclick="recBulkSave()">💾 Save all</button>
+      <button class="btn-reset" onclick="recBulkCancel()">Cancel</button>
+    </div>`;
+}
+function recBulkToggle(k,catId,checked){
+  const arr = recBulkDraft[k], i = arr.indexOf(catId);
+  if(checked && i<0) arr.push(catId);
+  if(!checked && i>=0) arr.splice(i,1);
+}
+function recBulkCancel(){ recBulkDraft=null; renderAllRecipes(); }
+function recBulkSave(){
+  Object.keys(recBulkDraft).forEach(k=>{
+    const cats = recBulkDraft[k];
+    if(customRecipes[k]) customRecipes[k].cats = cats;
+    else recipeEdits[k] = Object.assign({}, recipeEdits[k], {cats});
+  });
+  saveCustomRecipes(); saveRecipeEdits();
+  recBulkDraft=null;
+  renderAllRecipes(); renderRecipes(); renderGrocery('A'); renderGrocery('B');
+  toast("Tags saved");
+}
+function recSetCat(id){ recCat=id; renderAllRecipes(); }
+function recAddCat(){
+  const name=(prompt("Name for the new tab (e.g. Grill, Casserole, Vegetarian):")||"").trim();
+  if(!name) return;
+  if(recAllCats().some(c=>c.name.toLowerCase()===name.toLowerCase())){ toast("Tab already exists"); return; }
+  let id="rcat-"+(slug(name)||"tab"), n=2; const base=id;
+  while(recAllCats().some(c=>c.id===id)){ id=base+"-"+n; n++; }
+  recCats.push({id,name}); saveRecCats();
+  recCat=id; renderAllRecipes(); toast("Tab added");
+}
+function recDeleteCat(id){
+  if(recKeys(id).length){ alert("Move or delete the recipes in this tab first."); return; }
+  if(!confirm("Delete this tab?")) return;
+  recCats=recCats.filter(c=>c.id!==id); saveRecCats(); recCat="all"; renderAllRecipes(); toast("Tab deleted");
 }
 function showRecipeDetail(k,scale){
   if(recipeEditKey===k){ renderRecipeForm(); return; }
@@ -1832,13 +1931,14 @@ function showRecipeDetail(k,scale){
   const link = r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${r.src} ↗</a>` : (r.src||"your own recipe");
   const note = r.note ? `<div class="note-box">💡 ${r.note}</div>` : "";
   const scaleNote = (scale!==1) ? `<div class="note-box">👥 ${scale}x tonight — grocery list already adjusted.</div>` : "";
+  const catNames = recCatNamesOf(k);
   recipeDetailScale = scale;
   const rd=recipeData(k);
   document.getElementById("recipeDetail").innerHTML =
     `<button class="btn-reset" style="margin-bottom:12px" onclick="hideRecipeDetail()">← All recipes</button>
      <article class="recipe">
        <h3>${escHTML(r.title)}</h3>
-       <div class="meta">Serves ${escHTML(r.serves)} · Source: ${link}</div>
+       <div class="meta">${catNames?escHTML(catNames)+" · ":""}Serves ${escHTML(r.serves)} · Source: ${link}</div>
        ${scaleNote}
        <button class="btn-edit" style="margin:8px 0" onclick="editRecipe('${k}')">✏️ Edit</button>
        <div class="cols"><div><h4>Ingredients</h4>${ingHTML(rd.ing)}</div>
@@ -2109,6 +2209,7 @@ function applyRemote(data){
     customRecipes = s.customRecipes||{};
     if(s.otherRecipes!==undefined) otherRecipes = s.otherRecipes;   // payloads that predate Other Recipes keep the local copy
     if(s.otherCats!==undefined) otherCats = s.otherCats;
+    if(s.recCats!==undefined) recCats = s.recCats;
     orPurgeRetired();
     buildCatalog();     // fold any synced custom items into CATALOG before seeding their prices below
     ensureDefaults();   // fill in any items the remote payload predates (e.g. newly added)
@@ -2125,7 +2226,7 @@ function applyRemote(data){
     mealScale.A = normalizeScale(remoteScaleAll[CTX.A.key]);
     mealScale.B = normalizeScale(remoteScaleAll[CTX.B.key]);
     save(LS.staples,staplePrices); save(LS.prices,prices); save(LS.store,storeSel); save(LS.unit,unitSel);
-    saveCustomItems(); saveCustomRecipes(); saveOther();
+    saveCustomItems(); saveCustomRecipes(); saveOther(); saveRecCats();
     save(ckChecks(CTX.A.key),checks.A); save(ckChecks(CTX.B.key),checks.B);
     save(ckCustom(CTX.A.key),custom.A); save(ckCustom(CTX.B.key),custom.B);
     save(ckMeals(CTX.A.key),mealPlan.A); save(ckMeals(CTX.B.key),mealPlan.B);
@@ -2143,7 +2244,7 @@ function syncPush(){
   remoteMealsAll[CTX.A.key]=mealPlan.A; remoteMealsAll[CTX.B.key]=mealPlan.B;
   remoteScaleAll[CTX.A.key]=mealScale.A; remoteScaleAll[CTX.B.key]=mealScale.B;
   myRev = DEVICE+"-"+(++seq);
-  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, mealScale:remoteScaleAll, recipeEdits:recipeEdits, customItems:customItems, customRecipes:customRecipes, otherRecipes:otherRecipes, otherCats:otherCats});
+  const state = JSON.stringify({staples:staplePrices, prices:prices, store:storeSel, unit:unitSel, checks:remoteChecksAll, custom:remoteCustomAll, meals:remoteMealsAll, mealScale:remoteScaleAll, recipeEdits:recipeEdits, customItems:customItems, customRecipes:customRecipes, otherRecipes:otherRecipes, otherCats:otherCats, recCats:recCats});
   syncRef.set({rev:myRev, updatedAt:Date.now(), state:state}).catch(function(e){ console.warn('sync push failed',e); });
 }
 
