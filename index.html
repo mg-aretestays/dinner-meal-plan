@@ -1929,6 +1929,9 @@ const OR_BUILTIN = {
     note:"To bake later, shape the wreath, let it rise 30–60 minutes, then refrigerate covered up to 24 hours. Take it out while the oven preheats and bake as directed. Leftovers keep covered in the fridge up to 4 days; reheat on a parchment-lined sheet until the cheese is melted. About 457 calories per slice."}
 };
 let otherRecipes = load('mp_otherRecipes_v1', {});   // { [key]: recipe } — user-created, or edited copies of built-ins
+// Retired built-in (replaced by sourdough-simple-bread): drop any saved/synced edited copy of it.
+function orPurgeRetired(){ if(otherRecipes && otherRecipes["sourdough-easy-bread"]){ delete otherRecipes["sourdough-easy-bread"]; try{ localStorage.setItem('mp_otherRecipes_v1', JSON.stringify(otherRecipes)); }catch(e){} } }
+orPurgeRetired();
 let otherCats = load('mp_otherCats_v1', []);         // [{id,name}] — user-added tabs
 function saveOther(){ save('mp_otherRecipes_v1', otherRecipes); save('mp_otherCats_v1', otherCats); }
 let orCat = "all", orView = null;   // active sub-tab; null | {k} detail | {draft} form
@@ -2106,6 +2109,7 @@ function applyRemote(data){
     customRecipes = s.customRecipes||{};
     if(s.otherRecipes!==undefined) otherRecipes = s.otherRecipes;   // payloads that predate Other Recipes keep the local copy
     if(s.otherCats!==undefined) otherCats = s.otherCats;
+    orPurgeRetired();
     buildCatalog();     // fold any synced custom items into CATALOG before seeding their prices below
     ensureDefaults();   // fill in any items the remote payload predates (e.g. newly added)
     remoteChecksAll = s.checks||{};
